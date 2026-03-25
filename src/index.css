@@ -1,0 +1,453 @@
+/*
+ * index.css
+ * ─────────
+ * Global design system for isoTrainer.
+ * Dark-mode first. Cyberpunk/athletic aesthetic:
+ *   - Deep navy background with subtle glass cards
+ *   - Accent green (#00e5a0) for success / on-target state
+ *   - Amber / red for warnings
+ *   - Monospace display font for numbers
+ *
+ * All layout uses CSS Grid and Flexbox — no frameworks.
+ */
+
+/* ── Google Fonts ──────────────────────────────────────────────────────────── */
+@import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@400;600;700;900&display=swap");
+
+/* ── Design tokens ─────────────────────────────────────────────────────────── */
+:root {
+  /* Palette */
+  --color-bg:         #080e17;
+  --color-surface:    #0d1a2a;
+  --color-surface-2:  #122033;
+  --color-border:     #1a3050;
+  --color-border-2:   #223d5e;
+
+  --color-accent:     #00e5a0;
+  --color-accent-dim: #00c48c;
+  --color-amber:      #ffb700;
+  --color-red:        #ff4455;
+  --color-red-dim:    #cc2233;
+
+  --color-text:       #ddeeff;
+  --color-text-muted: #4a6a80;
+  --color-white:      #ffffff;
+
+  /* Status colours — matched to PoseStatus */
+  --color-on-target:      var(--color-accent);
+  --color-above:          var(--color-amber);
+  --color-below:          var(--color-amber);
+  --color-no-pose:        var(--color-text-muted);
+  --color-low-visibility: var(--color-text-muted);
+
+  /* Timer phase colours */
+  --color-exercise: var(--color-accent);
+  --color-rest:     var(--color-red);
+  --color-idle:     var(--color-text-muted);
+
+  /* Typography */
+  --font-body:    "Barlow", system-ui, sans-serif;
+  --font-mono:    "Share Tech Mono", "Courier New", monospace;
+
+  /* Spacing scale (8-pt grid) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+
+  /* Radii */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+
+  /* Shadows */
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.5);
+  --shadow-glow-accent: 0 0 16px rgba(0, 229, 160, 0.25);
+  --shadow-glow-red:    0 0 16px rgba(255, 68, 85, 0.25);
+}
+
+/* ── Reset ─────────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width:  100%;
+}
+
+body {
+  background: var(--color-bg);
+  color:      var(--color-text);
+  font-family: var(--font-body);
+  font-size:   15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden; /* Tauri desktop — no scrollbars */
+}
+
+/* ── App shell ─────────────────────────────────────────────────────────────── */
+.app-root {
+  display:        flex;
+  flex-direction: column;
+  height:         100vh;
+  padding:        var(--sp-4) var(--sp-5);
+  gap:            var(--sp-4);
+  overflow:       hidden;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+.app-header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding-bottom:  var(--sp-4);
+  border-bottom:   1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.app-logo {
+  font-family:    var(--font-body);
+  font-weight:    900;
+  font-size:      22px;
+  letter-spacing: 3px;
+  color:          var(--color-accent);
+  text-transform: uppercase;
+}
+.app-logo span {
+  color: var(--color-text);
+}
+
+.header-right {
+  display:     flex;
+  align-items: center;
+  gap:         var(--sp-3);
+}
+
+.app-badge {
+  font-size:      11px;
+  font-weight:    600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color:          var(--color-accent);
+  background:     rgba(0, 229, 160, 0.10);
+  border:         1px solid rgba(0, 229, 160, 0.25);
+  padding:        3px 10px;
+  border-radius:  99px;
+}
+
+/* WebSocket status badge */
+.ws-badge {
+  font-size:  11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  border: 1px solid transparent;
+}
+.ws-badge--open       { color: var(--color-accent); background: rgba(0,229,160,.08); border-color: rgba(0,229,160,.2); }
+.ws-badge--connecting { color: var(--color-amber);  background: rgba(255,183,0,.08);  border-color: rgba(255,183,0,.2); }
+.ws-badge--closed,
+.ws-badge--error      { color: var(--color-red);    background: rgba(255,68,85,.08);  border-color: rgba(255,68,85,.2); }
+
+/* ── Main grid ─────────────────────────────────────────────────────────────── */
+.app-grid {
+  display:               grid;
+  grid-template-columns: 1fr 300px;
+  gap:                   var(--sp-5);
+  flex:                  1;
+  min-height:            0;   /* allow grid to shrink inside flex */
+}
+
+/* ── Camera section ────────────────────────────────────────────────────────── */
+.camera-section {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--sp-4);
+  min-height:     0;
+}
+
+.camera-wrapper {
+  flex:         1;
+  background:   var(--color-surface);
+  border:       1px solid var(--color-border);
+  border-radius: var(--r-lg);
+  overflow:     hidden;
+  position:     relative;
+  min-height:   0;
+  /* Subtle inner glow when connected */
+  box-shadow:   var(--shadow-card);
+}
+
+.camera-placeholder {
+  width:           100%;
+  height:          100%;
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  justify-content: center;
+  gap:             var(--sp-3);
+  color:           var(--color-text-muted);
+  font-size:       14px;
+}
+.camera-placeholder__icon {
+  font-size: 44px;
+  opacity:   0.35;
+}
+
+/* Position guide card */
+.info-card {
+  background:    var(--color-surface);
+  border:        1px solid var(--color-border);
+  border-radius: var(--r-md);
+  padding:       var(--sp-4) var(--sp-5);
+  flex-shrink:   0;
+}
+.info-card__label {
+  font-size:      10px;
+  font-weight:    700;
+  letter-spacing: 2px;
+  color:          var(--color-text-muted);
+  margin-bottom:  var(--sp-2);
+}
+.info-card__text {
+  font-size:  13px;
+  color:      var(--color-text-muted);
+  line-height: 1.7;
+  border-left: 2px solid var(--color-accent);
+  padding-left: var(--sp-3);
+}
+
+/* ── Metrics panel ─────────────────────────────────────────────────────────── */
+.metrics-panel {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--sp-4);
+  min-height:     0;
+}
+
+/* ── Angle display ─────────────────────────────────────────────────────────── */
+.angle-display {
+  background:    var(--color-surface);
+  border:        1px solid var(--color-border);
+  border-radius: var(--r-md);
+  padding:       var(--sp-5) var(--sp-5) var(--sp-4);
+}
+
+.angle-label {
+  font-size:      10px;
+  font-weight:    700;
+  letter-spacing: 2px;
+  color:          var(--color-text-muted);
+  margin-bottom:  var(--sp-2);
+}
+
+.angle-value {
+  font-family:    var(--font-mono);
+  font-size:      68px;
+  line-height:    1;
+  letter-spacing: 2px;
+  transition:     color 0.25s ease;
+}
+.angle-value--on_target      { color: var(--color-accent); }
+.angle-value--above,
+.angle-value--below          { color: var(--color-amber);  }
+.angle-value--no_pose,
+.angle-value--low_visibility { color: var(--color-text-muted); }
+
+.angle-feedback {
+  margin-top:  var(--sp-2);
+  font-size:   13px;
+  font-weight: 500;
+  min-height:  20px;
+  transition:  color 0.25s ease;
+}
+.angle-feedback--on_target      { color: var(--color-accent); }
+.angle-feedback--above,
+.angle-feedback--below          { color: var(--color-amber);  }
+.angle-feedback--no_pose,
+.angle-feedback--low_visibility { color: var(--color-text-muted); }
+
+/* Progress bar */
+.angle-bar-track {
+  height:        6px;
+  background:    var(--color-border);
+  border-radius: 99px;
+  margin-top:    var(--sp-4);
+  overflow:      hidden;
+}
+.angle-bar-fill {
+  height:      100%;
+  border-radius: 99px;
+  width:       0%;
+  transition:  width 0.15s ease, background 0.25s ease;
+}
+.angle-bar-fill--on_target      { background: var(--color-accent); }
+.angle-bar-fill--above,
+.angle-bar-fill--below          { background: var(--color-amber);  }
+.angle-bar-fill--no_pose,
+.angle-bar-fill--low_visibility { background: var(--color-text-muted); }
+
+/* ── Timer widget ──────────────────────────────────────────────────────────── */
+.timer-widget {
+  border-radius: var(--r-md);
+  padding:       var(--sp-5);
+  text-align:    center;
+  transition:    background 0.4s ease;
+  flex-shrink:   0;
+}
+.timer-widget--idle {
+  background: var(--color-surface);
+  border:     1px solid var(--color-border);
+}
+.timer-widget--exercise {
+  background: rgba(0, 229, 160, 0.12);
+  border:     1px solid rgba(0, 229, 160, 0.35);
+  box-shadow: var(--shadow-glow-accent);
+}
+.timer-widget--rest {
+  background: rgba(255, 68, 85, 0.12);
+  border:     1px solid rgba(255, 68, 85, 0.35);
+  box-shadow: var(--shadow-glow-red);
+}
+
+.timer-phase-label {
+  font-size:      10px;
+  font-weight:    700;
+  letter-spacing: 3px;
+  color:          rgba(255,255,255,0.55);
+  margin-bottom:  var(--sp-1);
+}
+
+.timer-display {
+  font-family:    var(--font-mono);
+  font-size:      52px;
+  letter-spacing: 4px;
+  color:          var(--color-white);
+  line-height:    1.1;
+}
+
+.timer-cycles {
+  display:    block;
+  margin-top: var(--sp-2);
+  font-size:  12px;
+  color:      rgba(255,255,255,0.45);
+  letter-spacing: 1px;
+}
+
+/* ── Controls ──────────────────────────────────────────────────────────────── */
+.controls {
+  display: flex;
+  gap:     var(--sp-3);
+  flex-shrink: 0;
+  margin-top: auto; /* push to bottom of panel */
+}
+
+/* Base button */
+.btn {
+  flex:           1;
+  padding:        14px var(--sp-3);
+  border:         none;
+  border-radius:  var(--r-sm);
+  font-family:    var(--font-body);
+  font-size:      13px;
+  font-weight:    700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor:         pointer;
+  transition:     filter 0.15s, transform 0.1s, opacity 0.2s;
+  outline:        none;
+}
+.btn:hover  { filter: brightness(1.1); }
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; filter: none; transform: none; }
+
+.btn--primary { background: var(--color-accent);    color: #051a10; }
+.btn--danger  { background: var(--color-red);       color: var(--color-white); }
+.btn--amber   { background: var(--color-amber);     color: #1a0d00; }
+.btn--ghost   {
+  background: transparent;
+  color:      var(--color-text);
+  border:     1px solid var(--color-border-2);
+}
+.btn--ghost:hover { background: var(--color-surface-2); }
+
+/* ── Settings modal ────────────────────────────────────────────────────────── */
+.modal-backdrop {
+  position:        fixed;
+  inset:           0;
+  background:      rgba(5, 12, 22, 0.75);
+  backdrop-filter: blur(6px);
+  z-index:         100;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+}
+
+.modal-card {
+  background:    var(--color-surface);
+  border:        1px solid var(--color-border-2);
+  border-radius: var(--r-lg);
+  padding:       var(--sp-8) var(--sp-8) var(--sp-6);
+  width:         90%;
+  max-width:     420px;
+  display:       flex;
+  flex-direction: column;
+  gap:           var(--sp-5);
+  box-shadow:    0 20px 60px rgba(0, 0, 0, 0.65);
+  animation:     modal-in 0.2s ease;
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)     scale(1);    }
+}
+
+.modal-title {
+  font-size:      18px;
+  font-weight:    700;
+  letter-spacing: 1px;
+  border-bottom:  1px solid var(--color-border);
+  padding-bottom: var(--sp-4);
+}
+
+.modal-field {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--sp-2);
+}
+
+.modal-label {
+  font-size:      10px;
+  font-weight:    700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color:          var(--color-text-muted);
+}
+
+.modal-input {
+  padding:       10px var(--sp-3);
+  background:    var(--color-bg);
+  border:        1px solid var(--color-border-2);
+  border-radius: var(--r-sm);
+  color:         var(--color-text);
+  font-family:   var(--font-body);
+  font-size:     14px;
+  outline:       none;
+  transition:    border-color 0.2s;
+  width:         100%;
+}
+.modal-input:focus   { border-color: var(--color-accent); }
+select.modal-input   { cursor: pointer; }
+
+.modal-actions {
+  display:     flex;
+  gap:         var(--sp-3);
+  margin-top:  var(--sp-2);
+}
