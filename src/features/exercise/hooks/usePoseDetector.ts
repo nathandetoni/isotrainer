@@ -69,14 +69,17 @@ export function usePoseDetector(): PoseDetectorAPI {
       "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm",
     );
 
+    // Tauri's embedded WebKit WebView does not expose GPU/WebGL in a way that
+    // MediaPipe WASM can use — using "GPU" causes a silent crash that leaves
+    // landmarkerRef null and the camera feed blank. We detect Tauri at runtime
+    // so the same build works both as a web app (GPU) and as a native app (CPU).
+    const isTauri = typeof (window as any).__TAURI_INTERNALS__ !== "undefined";
+
     const landmarker = await PoseLandmarker.createFromOptions(vision, {
       baseOptions: {
         modelAssetPath:
           "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task",
-        // IMPORTANT: Use CPU delegate in Tauri — the embedded WebKit WebView
-        // does not expose GPU/WebGL in a way that MediaPipe WASM can use,
-        // causing a silent crash with "GPU" that leaves landmarkerRef null.
-        delegate: "CPU",
+        delegate: isTauri ? "CPU" : "GPU",
       },
       runningMode: "VIDEO",
       numPoses: 1,
