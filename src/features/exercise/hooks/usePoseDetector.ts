@@ -30,11 +30,11 @@ import type { LandmarkSet } from "../../../types/protocol";
 // Same indices as mp.solutions.pose.PoseLandmark in Python
 
 const LM = {
-  LEFT_HIP:    23,
-  LEFT_KNEE:   25,
-  LEFT_ANKLE:  27,
-  RIGHT_HIP:   24,
-  RIGHT_KNEE:  26,
+  LEFT_HIP: 23,
+  LEFT_KNEE: 25,
+  LEFT_ANKLE: 27,
+  RIGHT_HIP: 24,
+  RIGHT_KNEE: 26,
   RIGHT_ANKLE: 28,
 } as const;
 
@@ -43,20 +43,20 @@ const VISIBILITY_THRESHOLD = 0.5; // mirrors Python _VISIBILITY_THRESHOLD
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
 export interface PoseDetectorAPI {
-  videoRef:     RefObject<HTMLVideoElement | null>;
-  start:        (deviceId: string) => Promise<void>;
-  stop:         () => void;
-  listCameras:  () => Promise<void>;
+  videoRef: RefObject<HTMLVideoElement | null>;
+  start: (deviceId: string) => Promise<void>;
+  stop: () => void;
+  listCameras: () => Promise<void>;
 }
 
 export function usePoseDetector(): PoseDetectorAPI {
   const { dispatch } = useExerciseStore();
 
-  const videoRef        = useRef<HTMLVideoElement>(null);
-  const landmarkerRef   = useRef<PoseLandmarker | null>(null);
-  const rafRef          = useRef<number>(0);
-  const streamRef       = useRef<MediaStream | null>(null);
-  const isRunningRef    = useRef(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const landmarkerRef = useRef<PoseLandmarker | null>(null);
+  const rafRef = useRef<number>(0);
+  const streamRef = useRef<MediaStream | null>(null);
+  const isRunningRef = useRef(false);
 
   // ── Load MediaPipe model once ─────────────────────────────────────────────
 
@@ -73,13 +73,16 @@ export function usePoseDetector(): PoseDetectorAPI {
       baseOptions: {
         modelAssetPath:
           "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task",
-        delegate: "GPU",
+        // IMPORTANT: Use CPU delegate in Tauri — the embedded WebKit WebView
+        // does not expose GPU/WebGL in a way that MediaPipe WASM can use,
+        // causing a silent crash with "GPU" that leaves landmarkerRef null.
+        delegate: "CPU",
       },
-      runningMode:          "VIDEO",
-      numPoses:             1,
+      runningMode: "VIDEO",
+      numPoses: 1,
       minPoseDetectionConfidence: 0.5,
-      minPosePresenceConfidence:  0.5,
-      minTrackingConfidence:      0.5,
+      minPosePresenceConfidence: 0.5,
+      minTrackingConfidence: 0.5,
     });
 
     landmarkerRef.current = landmarker;
@@ -102,7 +105,7 @@ export function usePoseDetector(): PoseDetectorAPI {
       .filter((d) => d.kind === "videoinput")
       .map((d, i) => ({
         deviceId: d.deviceId,
-        name:     d.label || `Camera ${i}`,
+        name: d.label || `Camera ${i}`,
       }));
 
     dispatch({ type: "SET_CAMERAS", payload: cameras });
@@ -113,7 +116,7 @@ export function usePoseDetector(): PoseDetectorAPI {
   const processFrame = useCallback((
     landmarker: PoseLandmarker,
     targetAngle: number,
-    tolerance:   number,
+    tolerance: number,
   ) => {
     const video = videoRef.current;
     if (!video || !isRunningRef.current) return;
@@ -150,18 +153,18 @@ export function usePoseDetector(): PoseDetectorAPI {
     }
 
     // ── Select more-visible leg side (same heuristic as Python) ─────────────
-    const visLeft  = pose[LM.LEFT_KNEE]?.visibility  ?? 0;
+    const visLeft = pose[LM.LEFT_KNEE]?.visibility ?? 0;
     const visRight = pose[LM.RIGHT_KNEE]?.visibility ?? 0;
     const side = visLeft >= visRight ? "left" : "right";
 
-    const hipLm   = pose[side === "left" ? LM.LEFT_HIP   : LM.RIGHT_HIP];
-    const kneeLm  = pose[side === "left" ? LM.LEFT_KNEE  : LM.RIGHT_KNEE];
+    const hipLm = pose[side === "left" ? LM.LEFT_HIP : LM.RIGHT_HIP];
+    const kneeLm = pose[side === "left" ? LM.LEFT_KNEE : LM.RIGHT_KNEE];
     const ankleLm = pose[side === "left" ? LM.LEFT_ANKLE : LM.RIGHT_ANKLE];
 
     // ── Reject low-confidence landmarks ──────────────────────────────────────
     const minVis = Math.min(
-      hipLm?.visibility   ?? 0,
-      kneeLm?.visibility  ?? 0,
+      hipLm?.visibility ?? 0,
+      kneeLm?.visibility ?? 0,
       ankleLm?.visibility ?? 0,
     );
     if (minVis < VISIBILITY_THRESHOLD) {
@@ -192,8 +195,8 @@ export function usePoseDetector(): PoseDetectorAPI {
 
     // ── Mirror X to match flipped video (same as Python 1.0 - hip_lm.x) ────
     const landmarks: LandmarkSet = {
-      hip:   { x: 1 - hipLm.x,   y: hipLm.y   },
-      knee:  { x: 1 - kneeLm.x,  y: kneeLm.y  },
+      hip: { x: 1 - hipLm.x, y: hipLm.y },
+      knee: { x: 1 - kneeLm.x, y: kneeLm.y },
       ankle: { x: 1 - ankleLm.x, y: ankleLm.y },
     };
 
@@ -212,8 +215,12 @@ export function usePoseDetector(): PoseDetectorAPI {
     try {
       const landmarker = await ensureLandmarker();
 
+      const videoConstraints: MediaTrackConstraints = deviceId
+        ? { deviceId: { exact: deviceId }, width: 1280, height: 720 }
+        : { width: 1280, height: 720 };
+
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: { exact: deviceId }, width: 1280, height: 720 },
+        video: videoConstraints,
         audio: false,
       });
 
@@ -221,24 +228,39 @@ export function usePoseDetector(): PoseDetectorAPI {
       const video = videoRef.current;
       if (!video) return;
 
+      // Attach srcObject before play() — required by all browsers/WebViews.
       video.srcObject = stream;
-      video.onloadeddata = () => {
-        isRunningRef.current = true;
-        dispatch({ type: "SET_DETECTOR_STATUS", payload: "running" });
 
-        // Read config from store at frame time (captured via closure refresh)
-        const runLoop = () => {
-          const store = (window as any).__isoTrainerConfig as
-            { targetAngle: number; tolerance: number } | undefined;
-          processFrame(
-            landmarker,
-            store?.targetAngle ?? 90,
-            store?.tolerance   ?? 3,
-          );
-        };
-        runLoop();
+      // Wait for the video to have enough data before starting the detection
+      // loop. We wrap this as a Promise so we can await it cleanly without
+      // relying on the `onloadeddata` property assignment racing with play().
+      // In Tauri's WebKit WebView the `onloadeddata` callback fires very
+      // quickly after srcObject is set; assigning it AFTER play() means the
+      // event can be missed entirely.
+      await new Promise<void>((resolve, reject) => {
+        video.onloadeddata = () => resolve();
+        video.onerror = (e: Event | string) => reject(e);
+
+        // play() triggers media loading; we must call it inside the Promise
+        // body so the onloadeddata listener is already registered.
+        video.play().catch(reject);
+      });
+
+      isRunningRef.current = true;
+      dispatch({ type: "SET_DETECTOR_STATUS", payload: "running" });
+
+      // Start the per-frame detection loop. Config is read from the global
+      // window ref to avoid stale closure captures.
+      const runLoop = () => {
+        const store = (window as any).__isoTrainerConfig as
+          { targetAngle: number; tolerance: number } | undefined;
+        processFrame(
+          landmarker,
+          store?.targetAngle ?? 90,
+          store?.tolerance ?? 3,
+        );
       };
-      await video.play();
+      runLoop();
     } catch (err) {
       console.error("[PoseDetector] start error:", err);
       dispatch({ type: "SET_DETECTOR_STATUS", payload: "error" });
@@ -261,7 +283,7 @@ export function usePoseDetector(): PoseDetectorAPI {
 
     dispatch({ type: "SET_DETECTOR_STATUS", payload: "idle" });
     dispatch({
-      type:    "SET_POSE",
+      type: "SET_POSE",
       payload: { angle: null, status: "no_pose", landmarks: null },
     });
   }, [dispatch]);
