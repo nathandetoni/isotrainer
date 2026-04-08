@@ -245,8 +245,8 @@ export function usePoseDetector(): PoseDetectorAPI {
       const landmarker = await ensureLandmarker();
 
       const videoConstraints: MediaTrackConstraints = deviceId
-        ? { deviceId: { exact: deviceId }, width: 1280, height: 720 }
-        : { width: 1280, height: 720 };
+        ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        : { width: { ideal: 1280 }, height: { ideal: 720 } };
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: videoConstraints,
