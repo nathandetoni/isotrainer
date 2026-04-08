@@ -79,13 +79,16 @@ function ExerciseApp() {
         {/* Camera feed */}
         <section className="camera-section">
           <div className="camera-wrapper">
-            {state.detectorStatus === "running" ? (
-              <CameraCanvas
-                videoRef={videoRef}
-                landmarks={state.pose.landmarks}
-                status={state.pose.status}
-              />
-            ) : (
+            {/* CameraCanvas is ALWAYS rendered so the <video> element exists
+                in the DOM. Without it, videoRef.current is null and start()
+                can never attach the stream or call play(). */}
+            <CameraCanvas
+              videoRef={videoRef}
+              landmarks={state.pose.landmarks}
+              status={state.pose.status}
+            />
+            {/* Placeholder overlay — shown when detector is not running */}
+            {state.detectorStatus !== "running" && (
               <div className="camera-placeholder">
                 <span className="camera-placeholder__icon">📷</span>
                 <p>Abra as <strong>configurações</strong> para iniciar a câmera</p>
