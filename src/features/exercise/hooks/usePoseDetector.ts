@@ -109,23 +109,35 @@ export function usePoseDetector(): PoseDetectorAPI {
   // ── Camera enumeration ─────────────────────────────────────────────────────
 
   const listCameras = useCallback(async () => {
-    // getUserMedia permission is needed before enumerateDevices gives labels
     try {
-      const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      tempStream.getTracks().forEach((t) => t.stop());
-    } catch {
-      // ignore — labels may be empty but we still dispatch what we have
+      // getUserMedia permission is needed before enumerateDevices gives labels.
+      // Wrap in its own try/catch so enumeration still works on old browsers
+      // (e.g. Safari 14 on Mac 2010) where getUserMedia may reject.
+      try {
+        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        tempStream.getTracks().forEach((t) => t.stop());
+      } catch {
+        // Permission denied or not supported — labels may be empty but IDs work
+        console.warn("[PoseDetector] getUserMedia for permissions failed — continuing with enumeration");
+      }
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cameras = devices
+        .filter((d) => d.kind === "videoinput")
+        .map((d, i) => ({
+          deviceId: d.deviceId,
+          name: d.label || `Camera ${i}`,
+        }));
+
+      dispatch({ type: "SET_CAMERAS", payload: cameras });
+    } catch (err) {
+      console.error("[PoseDetector] Camera enumeration failed:", err);
+      // Dispatch a default entry so the user can still try to start
+      dispatch({
+        type: "SET_CAMERAS",
+        payload: [{ deviceId: "", name: "Câmera padrão" }],
+      });
     }
-
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const cameras = devices
-      .filter((d) => d.kind === "videoinput")
-      .map((d, i) => ({
-        deviceId: d.deviceId,
-        name: d.label || `Camera ${i}`,
-      }));
-
-    dispatch({ type: "SET_CAMERAS", payload: cameras });
   }, [dispatch]);
 
   // ── Frame detection loop ───────────────────────────────────────────────────

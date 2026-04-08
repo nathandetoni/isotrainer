@@ -3,23 +3,24 @@
  * ─────────────────────────────────────────
  * Global state for the exercise session using React Context + useReducer.
  *
- * Updated for the TypeScript-native MediaPipe migration:
- *   - wsStatus removed → detectorStatus ("idle" | "loading" | "running" | "error")
- *   - LivePoseData.imageData removed (video renders natively via <video> element)
- *   - ExerciseConfig.cameraIndex: number → cameraIndex: string (deviceId)
- *   - CameraDevice now uses { deviceId, name } instead of { index, name }
+ * Updated for the training protocol system (v7):
+ *   - Protocols define ordered phases with individual target angles
+ *   - Timer cycles through phases, updating the target angle per phase
+ *   - phaseIndex tracks the current position within the protocol
+ *   - targetCycles / completedCycles track protocol completion
  */
 
 import React, { createContext, useContext, useReducer, type ReactNode } from "react";
 import type { PoseStatus, LandmarkSet, CameraDevice, DetectorStatus } from "../../../types/protocol";
+import type { TrainingProtocol } from "./protocolStore";
 
 // ── State shape ───────────────────────────────────────────────────────────────
 
 export interface ExerciseConfig {
-  targetAngle:      number;  // degrees
+  targetAngle:      number;  // degrees (updated dynamically per phase)
   tolerance:        number;  // ± degrees
-  exerciseDuration: number;  // seconds
-  restDuration:     number;  // seconds
+  exerciseDuration: number;  // seconds (default, overridden by protocol)
+  restDuration:     number;  // seconds (default, overridden by protocol)
   cameraIndex:      string;  // deviceId (empty string = default/first)
 }
 
@@ -32,13 +33,18 @@ export interface LivePoseData {
 export type TimerPhase = "idle" | "exercise" | "rest";
 
 export interface ExerciseState {
-  config:         ExerciseConfig;
-  pose:           LivePoseData;
-  phase:          TimerPhase;
-  seconds:        number;
-  cycles:         number;
-  cameras:        CameraDevice[];
-  detectorStatus: DetectorStatus;
+  config:           ExerciseConfig;
+  pose:             LivePoseData;
+  phase:            TimerPhase;
+  seconds:          number;
+  cycles:           number;
+  cameras:          CameraDevice[];
+  detectorStatus:   DetectorStatus;
+  // Protocol support
+  activeProtocol:   TrainingProtocol | null;
+  phaseIndex:       number;         // index within protocol.fases[]
+  targetCycles:     number;         // protocol.ciclos
+  completed:        boolean;        // true when all cycles finished
 }
 
 // ── Default values ────────────────────────────────────────────────────────────
@@ -58,13 +64,17 @@ const DEFAULT_POSE: LivePoseData = {
 };
 
 export const INITIAL_STATE: ExerciseState = {
-  config:         DEFAULT_CONFIG,
-  pose:           DEFAULT_POSE,
-  phase:          "idle",
-  seconds:        DEFAULT_CONFIG.restDuration,
-  cycles:         0,
-  cameras:        [],
-  detectorStatus: "idle",
+  config:           DEFAULT_CONFIG,
+  pose:             DEFAULT_POSE,
+  phase:            "idle",
+  seconds:          DEFAULT_CONFIG.restDuration,
+  cycles:           0,
+  cameras:          [],
+  detectorStatus:   "idle",
+  activeProtocol:   null,
+  phaseIndex:       0,
+  targetCycles:     10,
+  completed:        false,
 };
 
 // ── Actions ───────────────────────────────────────────────────────────────────
@@ -77,7 +87,10 @@ export type ExerciseAction =
   | { type: "SET_PHASE";           payload: TimerPhase }
   | { type: "SET_SECONDS";         payload: number }
   | { type: "INCREMENT_CYCLES" }
-  | { type: "RESET_TIMER" };
+  | { type: "RESET_TIMER" }
+  | { type: "SET_ACTIVE_PROTOCOL"; payload: TrainingProtocol | null }
+  | { type: "ADVANCE_PHASE" }
+  | { type: "SET_COMPLETED";       payload: boolean };
 
 // ── Reducer ───────────────────────────────────────────────────────────────────
 
@@ -100,13 +113,83 @@ function reducer(state: ExerciseState, action: ExerciseAction): ExerciseState {
     case "RESET_TIMER":
       return {
         ...state,
-        phase:   "idle",
-        seconds: state.config.restDuration,
-        cycles:  0,
+        phase:      "idle",
+        seconds:    getFirstPhaseDuration(state),
+        cycles:     0,
+        phaseIndex: 0,
+        completed:  false,
       };
+    case "SET_ACTIVE_PROTOCOL": {
+      const proto = action.payload;
+      if (!proto) {
+        return {
+          ...state,
+          activeProtocol: null,
+          targetCycles: 10,
+          phaseIndex: 0,
+        };
+      }
+      const firstPhase = proto.fases[0];
+      return {
+        ...state,
+        activeProtocol: proto,
+        targetCycles: proto.ciclos,
+        phaseIndex: 0,
+        config: {
+          ...state.config,
+          targetAngle: firstPhase?.angulo ?? 90,
+        },
+        seconds: firstPhase?.tempo ?? 120,
+      };
+    }
+    case "ADVANCE_PHASE": {
+      const proto = state.activeProtocol;
+      if (!proto || proto.fases.length === 0) return state;
+      const nextIdx = state.phaseIndex + 1;
+      const totalFases = proto.fases.length;
+
+      // Check if we completed a full cycle
+      let newCycles = state.cycles;
+      if (nextIdx % totalFases === 0) {
+        newCycles = state.cycles + 1;
+      }
+
+      // Check if all cycles completed
+      if (newCycles >= state.targetCycles) {
+        return {
+          ...state,
+          cycles: newCycles,
+          completed: true,
+          phase: "idle",
+        };
+      }
+
+      const nextPhase = proto.fases[nextIdx % totalFases];
+      return {
+        ...state,
+        phaseIndex: nextIdx,
+        cycles: newCycles,
+        phase: nextPhase.descanso ? "rest" : "exercise",
+        seconds: nextPhase.tempo,
+        config: {
+          ...state.config,
+          targetAngle: nextPhase.angulo,
+        },
+      };
+    }
+    case "SET_COMPLETED":
+      return { ...state, completed: action.payload };
     default:
       return state;
   }
+}
+
+/** Helper: get first phase duration for reset. */
+function getFirstPhaseDuration(state: ExerciseState): number {
+  if (state.activeProtocol?.fases?.[0]) {
+    return state.activeProtocol.fases[0].tempo;
+  }
+  return state.config.restDuration;
 }
 
 // ── Context ───────────────────────────────────────────────────────────────────

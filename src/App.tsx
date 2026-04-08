@@ -3,9 +3,10 @@
  * ───────
  * Root component. Wires together the exercise feature:
  *   - ExerciseProvider wraps the tree with the global store
- *   - usePoseDetector replaces the Python sidecar + usePoseSocket entirely
- *   - useTimer manages the exercise/rest interval
+ *   - usePoseDetector handles camera + MediaPipe detection
+ *   - useTimer manages the exercise/rest interval with protocol support
  *   - Layout: camera on the left, metrics panel on the right
+ *   - Protocol system: training protocols with dynamic phases
  */
 
 import { useState, useCallback, useEffect } from "react";
@@ -14,8 +15,13 @@ import { usePoseDetector } from "./features/exercise/hooks/usePoseDetector";
 import { useTimer } from "./features/exercise/hooks/useTimer";
 import { CameraCanvas } from "./features/exercise/components/CameraCanvas";
 import { TimerWidget } from "./features/exercise/components/TimerWidget";
+import { TargetAngleDisplay } from "./features/exercise/components/TargetAngleDisplay";
 import { SettingsModal } from "./features/exercise/components/SettingsModal";
 import { AngleDisplay } from "./features/exercise/components/AngleDisplay";
+import {
+  getActiveProtocol,
+  getActiveProtocolId,
+} from "./features/exercise/store/protocolStore";
 import "./index.css";
 
 // ── Inner app (inside the provider) ──────────────────────────────────────────
@@ -33,6 +39,17 @@ function ExerciseApp() {
       tolerance:   state.config.tolerance,
     };
   }, [state.config.targetAngle, state.config.tolerance]);
+
+  // Load saved protocol on mount
+  useEffect(() => {
+    const savedId = getActiveProtocolId();
+    if (savedId) {
+      const proto = getActiveProtocol();
+      if (proto) {
+        dispatch({ type: "SET_ACTIVE_PROTOCOL", payload: proto });
+      }
+    }
+  }, [dispatch]);
 
   const handleApplySettings = useCallback(async (deviceId: string) => {
     await start(deviceId);
@@ -69,7 +86,12 @@ function ExerciseApp() {
           <span className={`ws-badge ws-badge--${state.detectorStatus === "running" ? "open" : state.detectorStatus === "loading" ? "connecting" : state.detectorStatus === "error" ? "error" : "closed"}`}>
             {statusLabel}
           </span>
-          <span className="app-badge">Exercício de Parede</span>
+          {state.activeProtocol && (
+            <span className="app-badge">{state.activeProtocol.nome}</span>
+          )}
+          {!state.activeProtocol && (
+            <span className="app-badge">Exercício de Parede</span>
+          )}
         </div>
       </header>
 
@@ -79,9 +101,6 @@ function ExerciseApp() {
         {/* Camera feed */}
         <section className="camera-section">
           <div className="camera-wrapper">
-            {/* CameraCanvas is ALWAYS rendered so the <video> element exists
-                in the DOM. Without it, videoRef.current is null and start()
-                can never attach the stream or call play(). */}
             <CameraCanvas
               videoRef={videoRef}
               landmarks={state.pose.landmarks}
@@ -116,11 +135,20 @@ function ExerciseApp() {
             status={state.pose.status}
           />
 
-          <TimerWidget
-            phase={state.phase}
-            seconds={state.seconds}
-            cycles={state.cycles}
-          />
+          {/* Timer + Target angle side by side */}
+          <div className="timer-row">
+            <TimerWidget
+              phase={state.phase}
+              seconds={state.seconds}
+              cycles={state.cycles}
+              targetCycles={state.targetCycles}
+              completed={state.completed}
+            />
+            <TargetAngleDisplay
+              targetAngle={state.config.targetAngle}
+              phase={state.phase}
+            />
+          </div>
 
           {/* Controls */}
           <div className="controls">

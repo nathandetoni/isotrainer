@@ -453,3 +453,267 @@ select.modal-input   { cursor: pointer; }
   gap:         var(--sp-3);
   margin-top:  var(--sp-2);
 }
+
+/* ── Timer row (timer + target angle stacked in panel) ─────────────────────── */
+.timer-row {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--sp-3);
+}
+
+/* ── Target angle widget ───────────────────────────────────────────────────── */
+.target-angle-widget {
+  border-radius: var(--r-md);
+  padding:       var(--sp-4) var(--sp-5);
+  text-align:    center;
+  transition:    background 0.4s ease;
+  display:       flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.target-angle-widget--idle {
+  background: var(--color-surface);
+  border:     1px solid var(--color-border);
+}
+.target-angle-widget--exercise {
+  background: rgba(0, 229, 160, 0.12);
+  border:     1px solid rgba(0, 229, 160, 0.35);
+  box-shadow: var(--shadow-glow-accent);
+}
+.target-angle-widget--rest {
+  background: rgba(255, 68, 85, 0.12);
+  border:     1px solid rgba(255, 68, 85, 0.35);
+  box-shadow: var(--shadow-glow-red);
+}
+
+.target-angle-label {
+  font-size:      10px;
+  font-weight:    700;
+  letter-spacing: 3px;
+  color:          rgba(255,255,255,0.55);
+  margin-bottom:  var(--sp-1);
+}
+
+.target-angle-value {
+  font-family:    var(--font-mono);
+  font-size:      42px;
+  letter-spacing: 2px;
+  color:          var(--color-white);
+  line-height:    1.1;
+}
+
+.target-angle-unit {
+  font-size: 22px;
+  opacity:   0.7;
+}
+
+/* ── Timer completion ──────────────────────────────────────────────────────── */
+.timer-widget--completed {
+  background: rgba(0, 229, 160, 0.18) !important;
+  border-color: rgba(0, 229, 160, 0.5) !important;
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 16px rgba(0, 229, 160, 0.25); }
+  50%      { box-shadow: 0 0 32px rgba(0, 229, 160, 0.45); }
+}
+
+/* ── Protocol list ─────────────────────────────────────────────────────────── */
+.protocol-list {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--sp-2);
+}
+
+.protocol-empty {
+  font-size: 13px;
+  color:     var(--color-text-muted);
+  padding:   var(--sp-2) 0;
+}
+
+.protocol-items {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--sp-2);
+  max-height:     200px;
+  overflow-y:     auto;
+}
+
+.protocol-item {
+  display:       flex;
+  align-items:   center;
+  gap:           var(--sp-2);
+  padding:       var(--sp-2) var(--sp-3);
+  border:        1px solid var(--color-border);
+  border-radius: var(--r-sm);
+  background:    var(--color-bg);
+  cursor:        pointer;
+  transition:    border-color 0.2s, background 0.2s;
+}
+.protocol-item:hover {
+  border-color: var(--color-accent);
+}
+.protocol-item--active {
+  border-color: var(--color-accent);
+  background:   rgba(0, 229, 160, 0.08);
+}
+
+.protocol-item__info {
+  flex:           1;
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+  min-width:      0;
+}
+
+.protocol-item__name {
+  font-size:   13px;
+  font-weight: 600;
+  color:       var(--color-text);
+}
+
+.protocol-item__detail {
+  font-size:     11px;
+  color:         var(--color-text-muted);
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+}
+
+.protocol-item__actions {
+  display:     flex;
+  gap:         var(--sp-1);
+  flex-shrink: 0;
+}
+
+.protocol-btn {
+  padding:       3px 8px;
+  border-radius: 6px;
+  font-size:     12px;
+  cursor:        pointer;
+  border:        1px solid var(--color-border);
+  background:    var(--color-surface);
+  transition:    background 0.15s;
+}
+.protocol-btn:hover {
+  background: var(--color-surface-2);
+}
+.protocol-btn--delete {
+  border-color: rgba(255, 68, 85, 0.3);
+}
+.protocol-btn--delete:hover {
+  background: rgba(255, 68, 85, 0.15);
+}
+
+/* ── Add phase / new protocol button ───────────────────────────────────────── */
+.btn-add-phase {
+  width:          100%;
+  padding:        10px;
+  border:         2px dashed var(--color-border-2);
+  border-radius:  var(--r-sm);
+  background:     transparent;
+  color:          var(--color-text-muted);
+  font-family:    var(--font-body);
+  font-size:      13px;
+  font-weight:    600;
+  cursor:         pointer;
+  transition:     border-color 0.2s, color 0.2s;
+}
+.btn-add-phase:hover {
+  border-color: var(--color-accent);
+  color:        var(--color-accent);
+}
+
+/* ── Protocol editor modal (z-200, above settings) ────────────────────────── */
+.modal-backdrop--z200 {
+  z-index: 200;
+}
+
+.protocol-editor {
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+/* ── Phase cards inside the editor ─────────────────────────────────────────── */
+.phases-container {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--sp-3);
+}
+
+.phase-card {
+  border-radius: var(--r-sm);
+  padding:       var(--sp-3);
+  border:        1px solid var(--color-border);
+}
+.phase-card--work {
+  background: rgba(0, 229, 160, 0.06);
+  border-color: rgba(0, 229, 160, 0.2);
+}
+.phase-card--rest {
+  background: rgba(255, 68, 85, 0.06);
+  border-color: rgba(255, 68, 85, 0.2);
+}
+
+.phase-header {
+  display:       flex;
+  align-items:   center;
+  margin-bottom: var(--sp-2);
+}
+
+.phase-title {
+  flex:           1;
+  font-size:      11px;
+  font-weight:    700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color:          var(--color-text-muted);
+}
+
+.phase-remove-btn {
+  padding:       2px 8px;
+  border:        1px solid rgba(255, 68, 85, 0.3);
+  border-radius: 6px;
+  background:    rgba(255, 68, 85, 0.08);
+  color:         var(--color-red);
+  font-size:     11px;
+  font-weight:   700;
+  cursor:        pointer;
+  font-family:   var(--font-body);
+}
+.phase-remove-btn:hover {
+  background: var(--color-red);
+  color:      #fff;
+}
+
+.phase-fields {
+  display:     grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap:         var(--sp-2);
+  align-items: end;
+}
+
+.phase-field {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--sp-1);
+}
+
+.phase-field--check {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            var(--sp-1);
+}
+
+.phase-checkbox {
+  width:        22px;
+  height:       22px;
+  accent-color: var(--color-red);
+  cursor:       pointer;
+}
+
+.modal-input--mono {
+  font-family: var(--font-mono);
+}
