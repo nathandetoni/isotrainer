@@ -716,3 +716,35 @@ select.modal-input   { cursor: pointer; }
 .modal-input--mono {
   font-family: var(--font-mono);
 }
+
+/* ── Responsividade Mobile ─────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  body {
+    overflow-y: auto; /* Allow scrolling on mobile */
+  }
+  
+  .app-root {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .app-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .camera-section {
+    min-height: 50vh;
+  }
+  
+  .modal-card {
+    padding: var(--sp-5);
+  }
+  
+  .angle-value {
+    font-size: 56px;
+  }
+  
+  .timer-display {
+    font-size: 42px;
+  }
+}
