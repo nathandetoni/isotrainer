@@ -107,7 +107,10 @@ export const CameraCanvas = memo(function CameraCanvas({
         playsInline
         muted
       />
-      {/* Pose overlay canvas — sits on top of the video */}
+      {/* Pose overlay canvas — sits on top of the video.
+           No scaleX(-1) here: landmarks are already pre-mirrored
+           (x: 1 - rawX) in usePoseDetector, so they match the
+           CSS-mirrored video without any extra transform. */}
       <canvas
         ref={canvasRef}
         style={{
@@ -116,7 +119,6 @@ export const CameraCanvas = memo(function CameraCanvas({
           left:      0,
           width:     "100%",
           height:    "100%",
-          transform: "scaleX(-1)",   // mirror to match video
         }}
       />
     </div>
