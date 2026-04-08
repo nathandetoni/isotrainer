@@ -58,7 +58,20 @@ export function usePoseDetector(): PoseDetectorAPI {
   const streamRef = useRef<MediaStream | null>(null);
   const isRunningRef = useRef(false);
 
-  // ── Load MediaPipe model once ─────────────────────────────────────────────
+  // ── MediaPipe model URL ──────────────────────────────────────────────────
+
+  const MODEL_URL =
+    "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task";
+
+  const POSE_OPTIONS = {
+    runningMode: "VIDEO" as const,
+    numPoses: 1,
+    minPoseDetectionConfidence: 0.5,
+    minPosePresenceConfidence: 0.5,
+    minTrackingConfidence: 0.5,
+  };
+
+  // ── Load MediaPipe model once (GPU → CPU fallback) ────────────────────────
 
   const ensureLandmarker = useCallback(async (): Promise<PoseLandmarker> => {
     if (landmarkerRef.current) return landmarkerRef.current;
@@ -69,24 +82,25 @@ export function usePoseDetector(): PoseDetectorAPI {
       "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm",
     );
 
-    // Tauri's embedded WebKit WebView does not expose GPU/WebGL in a way that
-    // MediaPipe WASM can use — using "GPU" causes a silent crash that leaves
-    // landmarkerRef null and the camera feed blank. We detect Tauri at runtime
-    // so the same build works both as a web app (GPU) and as a native app (CPU).
-    const isTauri = typeof (window as any).__TAURI_INTERNALS__ !== "undefined";
+    let landmarker: PoseLandmarker;
 
-    const landmarker = await PoseLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath:
-          "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task",
-        delegate: isTauri ? "CPU" : "GPU",
-      },
-      runningMode: "VIDEO",
-      numPoses: 1,
-      minPoseDetectionConfidence: 0.5,
-      minPosePresenceConfidence: 0.5,
-      minTrackingConfidence: 0.5,
-    });
+    // Try GPU first — works on dedicated GPUs and most modern browsers.
+    // Falls back to CPU on machines with integrated video (Intel HD, etc.),
+    // Tauri WebKit WebViews, or any environment where WebGL is absent/broken.
+    try {
+      landmarker = await PoseLandmarker.createFromOptions(vision, {
+        baseOptions: { modelAssetPath: MODEL_URL, delegate: "GPU" },
+        ...POSE_OPTIONS,
+      });
+      console.info("[PoseDetector] Using GPU delegate");
+    } catch (gpuError) {
+      console.warn("[PoseDetector] GPU delegate failed, falling back to CPU:", gpuError);
+      landmarker = await PoseLandmarker.createFromOptions(vision, {
+        baseOptions: { modelAssetPath: MODEL_URL, delegate: "CPU" },
+        ...POSE_OPTIONS,
+      });
+      console.info("[PoseDetector] Using CPU delegate (fallback)");
+    }
 
     landmarkerRef.current = landmarker;
     return landmarker;

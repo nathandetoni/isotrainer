@@ -25,9 +25,9 @@ function formatTime(seconds: number): string {
 }
 
 const PHASE_LABEL: Record<TimerPhase, string> = {
-  idle:     "PRONTO",
-  exercise: "EXERCÍCIO",
-  rest:     "DESCANSO",
+  idle:     "AGUARDANDO INÍCIO",
+  exercise: "▶ EXERCÍCIO",
+  rest:     "⏸ DESCANSO",
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────

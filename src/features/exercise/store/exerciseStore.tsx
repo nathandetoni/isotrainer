@@ -61,7 +61,7 @@ export const INITIAL_STATE: ExerciseState = {
   config:         DEFAULT_CONFIG,
   pose:           DEFAULT_POSE,
   phase:          "idle",
-  seconds:        DEFAULT_CONFIG.exerciseDuration,
+  seconds:        DEFAULT_CONFIG.restDuration,
   cycles:         0,
   cameras:        [],
   detectorStatus: "idle",
@@ -101,7 +101,7 @@ function reducer(state: ExerciseState, action: ExerciseAction): ExerciseState {
       return {
         ...state,
         phase:   "idle",
-        seconds: state.config.exerciseDuration,
+        seconds: state.config.restDuration,
         cycles:  0,
       };
     default:

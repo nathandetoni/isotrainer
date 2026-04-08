@@ -86,6 +86,8 @@ function ExerciseApp() {
               videoRef={videoRef}
               landmarks={state.pose.landmarks}
               status={state.pose.status}
+              angle={state.pose.angle}
+              tolerance={state.config.tolerance}
             />
             {/* Placeholder overlay — shown when detector is not running */}
             {state.detectorStatus !== "running" && (
