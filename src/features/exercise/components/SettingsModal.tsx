@@ -49,23 +49,28 @@ export const SettingsModal = memo(function SettingsModal({
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingProto, setEditingProto] = useState<TrainingProtocol | null>(null);
 
+  // BUG E FIX: use primitive values from config as deps instead of the full
+  // state.config object (which changes reference on every dispatch).
+  const configTolerance   = state.config.tolerance;
+  const configCameraIndex = state.config.cameraIndex;
+
   // ── Sync when modal opens ───────────────────────────────────────────────
   useEffect(() => {
     if (isOpen) {
       listCameras();
       setProtocols(getProtocols());
       setActiveProtoId(getActiveProtocolId());
-      setTolerance(state.config.tolerance);
+      setTolerance(configTolerance);
 
       // Load saved camera
       const savedCam = getSavedCameraId();
       if (savedCam) {
         setCameraId(savedCam);
-      } else if (state.config.cameraIndex) {
-        setCameraId(state.config.cameraIndex);
+      } else if (configCameraIndex) {
+        setCameraId(configCameraIndex);
       }
     }
-  }, [isOpen, listCameras, state.config]);
+  }, [isOpen, listCameras, configTolerance, configCameraIndex]);
 
   // Pre-select first camera if none selected
   useEffect(() => {

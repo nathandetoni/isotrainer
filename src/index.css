@@ -308,6 +308,11 @@ body {
   background: var(--color-surface);
   border:     1px solid var(--color-border);
 }
+.timer-widget--countdown {
+  background: rgba(255, 183, 0, 0.12);
+  border:     1px solid rgba(255, 183, 0, 0.35);
+  box-shadow: 0 0 16px rgba(255, 183, 0, 0.2);
+}
 .timer-widget--exercise {
   background: rgba(0, 229, 160, 0.12);
   border:     1px solid rgba(0, 229, 160, 0.35);
@@ -473,6 +478,11 @@ select.modal-input   { cursor: pointer; }
 .target-angle-widget--idle {
   background: var(--color-surface);
   border:     1px solid var(--color-border);
+}
+.target-angle-widget--countdown {
+  background: rgba(255, 183, 0, 0.12);
+  border:     1px solid rgba(255, 183, 0, 0.35);
+  box-shadow: 0 0 16px rgba(255, 183, 0, 0.2);
 }
 .target-angle-widget--exercise {
   background: rgba(0, 229, 160, 0.12);
@@ -747,4 +757,43 @@ select.modal-input   { cursor: pointer; }
   .timer-display {
     font-size: 42px;
   }
+}
+
+/* ── Export modal ───────────────────────────────────────────────────────────── */
+.export-modal {
+  text-align: center;
+  max-width:  380px;
+}
+.export-icon {
+  font-size:   48px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.export-description {
+  font-size:  14px;
+  color:      var(--color-text-muted);
+  line-height: 1.6;
+}
+.export-description strong {
+  color: var(--color-text);
+}
+
+/* ── Footer ────────────────────────────────────────────────────────────────── */
+.app-footer {
+  padding:       var(--sp-4) var(--sp-6);
+  text-align:    center;
+  border-top:    1px solid var(--color-border);
+  background:    var(--color-surface);
+}
+.app-footer p {
+  font-size:   11px;
+  line-height: 1.6;
+  color:       var(--color-text-muted);
+  margin:      0;
+  max-width:   720px;
+  margin-inline: auto;
+}
+.app-footer strong {
+  color: var(--color-text);
+  font-weight: 600;
 }

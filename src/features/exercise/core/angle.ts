@@ -16,12 +16,9 @@ export interface Point2D {
   y: number;
 }
 
-export type PoseStatus =
-  | "on_target"
-  | "above"
-  | "below"
-  | "no_pose"
-  | "low_visibility";
+// Re-export PoseStatus from the shared types (single source of truth)
+export type { PoseStatus } from "../../../types/protocol";
+import type { PoseStatus } from "../../../types/protocol";
 
 export const AngleStatus = {
   ON_TARGET:      "on_target"      as const,
@@ -29,7 +26,7 @@ export const AngleStatus = {
   BELOW:          "below"          as const,
   NO_POSE:        "no_pose"        as const,
   LOW_VISIBILITY: "low_visibility" as const,
-};
+} satisfies Record<string, PoseStatus>;
 
 // ── Core computations ──────────────────────────────────────────────────────────
 

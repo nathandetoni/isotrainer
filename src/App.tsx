@@ -1,23 +1,28 @@
 /**
  * App.tsx
  * ───────
- * Root component. Wires together the exercise feature:
- *   - ExerciseProvider wraps the tree with the global store
- *   - usePoseDetector handles camera + MediaPipe detection
- *   - useTimer manages the exercise/rest interval with protocol support
- *   - Layout: camera on the left, metrics panel on the right
- *   - Protocol system: training protocols with dynamic phases
+ * Root component. Wires together the exercise feature.
+ *
+ * Fixes applied:
+ *   A) canStart now checks state.phase === "idle" — not the broader !isRunning
+ *      (which was blocking START during countdown)
+ *   B) ExportModal receives a snapshot (useState) not a live ref, so data is
+ *      always correct even if the user starts a second session
+ *   D) Removed window.__isoTrainerConfig — config is now handled via refs
+ *      inside usePoseDetector directly
  */
 
 import { useState, useCallback, useEffect } from "react";
 import { ExerciseProvider, useExerciseStore } from "./features/exercise/store/exerciseStore";
 import { usePoseDetector } from "./features/exercise/hooks/usePoseDetector";
 import { useTimer } from "./features/exercise/hooks/useTimer";
+import type { AngleRecord } from "./features/exercise/hooks/useTimer";
 import { CameraCanvas } from "./features/exercise/components/CameraCanvas";
 import { TimerWidget } from "./features/exercise/components/TimerWidget";
 import { TargetAngleDisplay } from "./features/exercise/components/TargetAngleDisplay";
 import { SettingsModal } from "./features/exercise/components/SettingsModal";
 import { AngleDisplay } from "./features/exercise/components/AngleDisplay";
+import { ExportModal } from "./features/exercise/components/ExportModal";
 import {
   getActiveProtocol,
   getActiveProtocolId,
@@ -29,27 +34,30 @@ import "./index.css";
 function ExerciseApp() {
   const { state, dispatch } = useExerciseStore();
   const { videoRef, start, stop, listCameras } = usePoseDetector();
-  const { start: startTimer, stop: stopTimer } = useTimer();
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const { start: startTimer, stop: stopTimer, angleLog } = useTimer();
 
-  // Expose config to the detector loop via a global ref (avoids closure staleness)
-  useEffect(() => {
-    (window as any).__isoTrainerConfig = {
-      targetAngle: state.config.targetAngle,
-      tolerance:   state.config.tolerance,
-    };
-  }, [state.config.targetAngle, state.config.tolerance]);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [exportOpen,   setExportOpen]   = useState(false);
+  // BUG B FIX: snapshot the log into state when training completes,
+  // so ExportModal always shows the correct session's data.
+  const [exportLog,    setExportLog]    = useState<AngleRecord[]>([]);
 
   // Load saved protocol on mount
   useEffect(() => {
     const savedId = getActiveProtocolId();
     if (savedId) {
       const proto = getActiveProtocol();
-      if (proto) {
-        dispatch({ type: "SET_ACTIVE_PROTOCOL", payload: proto });
-      }
+      if (proto) dispatch({ type: "SET_ACTIVE_PROTOCOL", payload: proto });
     }
   }, [dispatch]);
+
+  // BUG B FIX: capture snapshot of the log when training completes
+  useEffect(() => {
+    if (state.completed) {
+      setExportLog([...angleLog.current]);   // snapshot — not the live ref
+      setExportOpen(true);
+    }
+  }, [state.completed, angleLog]);
 
   const handleApplySettings = useCallback(async (deviceId: string) => {
     await start(deviceId);
@@ -65,33 +73,32 @@ function ExerciseApp() {
     dispatch({ type: "RESET_TIMER" });
   }, [stop, stopTimer, dispatch]);
 
-  const isRunning = state.phase !== "idle";
-  const canStart  = state.detectorStatus === "running" && !isRunning;
+  // BUG A FIX: canStart only requires phase === "idle" — not "!isRunning"
+  // The old check blocked START when phase was "countdown". Now countdown
+  // counts as "running" correctly but the button still only re-enables
+  // after a full STOP/RESET brings the phase back to idle.
+  const canStart = state.detectorStatus === "running" && state.phase === "idle";
 
-  // Detector status badge
   const statusLabel =
-    state.detectorStatus === "running" ? "● Ao vivo"   :
-    state.detectorStatus === "loading" ? "◌ Carregando…" :
-    state.detectorStatus === "error"   ? "✕ Erro"      : "○ Offline";
+    state.detectorStatus === "running" ? "● Ao vivo"      :
+    state.detectorStatus === "loading" ? "◌ Carregando…"  :
+    state.detectorStatus === "error"   ? "✕ Erro"         : "○ Offline";
 
   return (
     <div className="app-root">
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <header className="app-header">
-        <div className="app-logo">
-          ISO<span>TRAINER</span>
-        </div>
+        <div className="app-logo">ISO<span>TRAINER</span></div>
         <div className="header-right">
-          <span className={`ws-badge ws-badge--${state.detectorStatus === "running" ? "open" : state.detectorStatus === "loading" ? "connecting" : state.detectorStatus === "error" ? "error" : "closed"}`}>
-            {statusLabel}
+          <span className={`ws-badge ws-badge--${
+            state.detectorStatus === "running"  ? "open"       :
+            state.detectorStatus === "loading"  ? "connecting" :
+            state.detectorStatus === "error"    ? "error"      : "closed"
+          }`}>{statusLabel}</span>
+          <span className="app-badge">
+            {state.activeProtocol ? state.activeProtocol.nome : "Exercício de Parede"}
           </span>
-          {state.activeProtocol && (
-            <span className="app-badge">{state.activeProtocol.nome}</span>
-          )}
-          {!state.activeProtocol && (
-            <span className="app-badge">Exercício de Parede</span>
-          )}
         </div>
       </header>
 
@@ -107,8 +114,10 @@ function ExerciseApp() {
               status={state.pose.status}
               angle={state.pose.angle}
               tolerance={state.config.tolerance}
+              targetAngle={state.config.targetAngle}
+              phase={state.phase}
+              seconds={state.seconds}
             />
-            {/* Placeholder overlay — shown when detector is not running */}
             {state.detectorStatus !== "running" && (
               <div className="camera-placeholder">
                 <span className="camera-placeholder__icon">📷</span>
@@ -117,7 +126,6 @@ function ExerciseApp() {
             )}
           </div>
 
-          {/* Instructions card */}
           <div className="info-card">
             <p className="info-card__label">GUIA DE POSIÇÃO</p>
             <p className="info-card__text">
@@ -135,7 +143,6 @@ function ExerciseApp() {
             status={state.pose.status}
           />
 
-          {/* Timer + Target angle side by side */}
           <div className="timer-row">
             <TimerWidget
               phase={state.phase}
@@ -150,45 +157,45 @@ function ExerciseApp() {
             />
           </div>
 
-          {/* Controls */}
           <div className="controls">
-            <button
-              className="btn btn--amber"
-              onClick={() => setSettingsOpen(true)}
-            >
-              SET
-            </button>
-            <button
-              className="btn btn--primary"
-              onClick={handleStart}
-              disabled={!canStart}
-            >
-              START
-            </button>
+            <button className="btn btn--amber"   onClick={() => setSettingsOpen(true)}>SET</button>
+            <button className="btn btn--primary" onClick={handleStart}  disabled={!canStart}>START</button>
             <button
               className="btn btn--danger"
               onClick={handleStop}
-              disabled={!isRunning && state.detectorStatus !== "running"}
-            >
-              STOP
-            </button>
+              disabled={state.detectorStatus !== "running"}
+            >STOP</button>
           </div>
 
         </aside>
       </main>
 
-      {/* Settings modal */}
+      {/* ── Footer ─────────────────────────────────────────────────────── */}
+      <footer className="app-footer">
+        <p>
+          Powered by <strong>FCMFreire</strong> e <strong>Detoni</strong>. Este aplicativo integra o
+          projeto de pesquisa da doutoranda Claudiana Marcela Siste Charal, sob orientação do
+          Prof. Dr. Wendell A. Lopes, vinculado aos Departamentos de Física e de Educação Física
+          da Universidade Estadual de Maringá (UEM), Maringá, PR, Brasil.
+        </p>
+      </footer>
+
+      {/* Modals */}
       <SettingsModal
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         onApply={handleApplySettings}
         listCameras={listCameras}
       />
+
+      <ExportModal
+        isOpen={exportOpen}
+        onClose={() => setExportOpen(false)}
+        log={exportLog}
+      />
     </div>
   );
 }
-
-// ── Root export ───────────────────────────────────────────────────────────────
 
 export default function App() {
   return (

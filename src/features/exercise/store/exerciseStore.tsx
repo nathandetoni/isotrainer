@@ -30,7 +30,7 @@ export interface LivePoseData {
   landmarks: LandmarkSet | null;
 }
 
-export type TimerPhase = "idle" | "exercise" | "rest";
+export type TimerPhase = "idle" | "countdown" | "exercise" | "rest";
 
 export interface ExerciseState {
   config:           ExerciseConfig;
@@ -82,6 +82,7 @@ export const INITIAL_STATE: ExerciseState = {
 export type ExerciseAction =
   | { type: "SET_CONFIG";          payload: Partial<ExerciseConfig> }
   | { type: "SET_POSE";            payload: LivePoseData }
+  | { type: "SET_POSE_LANDMARKS"; payload: { status: PoseStatus; landmarks: LandmarkSet | null } }
   | { type: "SET_CAMERAS";         payload: CameraDevice[] }
   | { type: "SET_DETECTOR_STATUS"; payload: DetectorStatus }
   | { type: "SET_PHASE";           payload: TimerPhase }
@@ -100,6 +101,9 @@ function reducer(state: ExerciseState, action: ExerciseAction): ExerciseState {
       return { ...state, config: { ...state.config, ...action.payload } };
     case "SET_POSE":
       return { ...state, pose: action.payload };
+    case "SET_POSE_LANDMARKS":
+      // Update landmarks+status every frame but keep angle frozen (throttled to 1s)
+      return { ...state, pose: { ...state.pose, status: action.payload.status, landmarks: action.payload.landmarks } };
     case "SET_CAMERAS":
       return { ...state, cameras: action.payload };
     case "SET_DETECTOR_STATUS":

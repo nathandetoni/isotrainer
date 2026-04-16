@@ -2,7 +2,7 @@
  * features/exercise/components/TimerWidget.tsx
  * ─────────────────────────────────────────────
  * Displays the current timer phase, countdown, cycle count, and completion.
- * Background colour transitions between exercise (green) and rest (red).
+ * Supports countdown phase (amber) before the workout begins.
  */
 
 import { memo } from "react";
@@ -16,8 +16,6 @@ interface TimerWidgetProps {
   completed:    boolean;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60).toString().padStart(2, "0");
   const s = (seconds % 60).toString().padStart(2, "0");
@@ -25,12 +23,11 @@ function formatTime(seconds: number): string {
 }
 
 const PHASE_LABEL: Record<TimerPhase, string> = {
-  idle:     "AGUARDANDO INÍCIO",
-  exercise: "▶ EXERCÍCIO",
-  rest:     "⏸ DESCANSO",
+  idle:      "AGUARDANDO INÍCIO",
+  countdown: "⏳ PREPARAR…",
+  exercise:  "▶ EXERCÍCIO",
+  rest:      "⏸ DESCANSO",
 };
-
-// ── Component ─────────────────────────────────────────────────────────────────
 
 export const TimerWidget = memo(function TimerWidget({
   phase,

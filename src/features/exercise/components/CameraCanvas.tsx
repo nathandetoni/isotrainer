@@ -10,10 +10,12 @@
  *   - Vertical arrow at the knee (solid = vertical OK, dashed = off)
  *   - Large angle readout overlaid near the knee
  *   - A / B / C labels on landmark points
+ *   - Target angle badge in the top-right corner
  */
 
 import { useEffect, useRef, useCallback, memo, type RefObject } from "react";
 import type { LandmarkSet, PoseStatus } from "../../../types/protocol";
+import type { TimerPhase } from "../store/exerciseStore";
 
 // ── Color palette (matches CSS design tokens) ────────────────────────────────
 
@@ -25,14 +27,24 @@ const COLOR: Record<PoseStatus, string> = {
   low_visibility: "#5a7a8a",
 };
 
+const PHASE_COLOR: Record<TimerPhase, string> = {
+  idle:      "#5a7a8a",
+  countdown: "#ffb700",
+  exercise:  "#00e5a0",
+  rest:      "#ff4455",
+};
+
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface CameraCanvasProps {
-  videoRef:   RefObject<HTMLVideoElement | null>;
-  landmarks:  LandmarkSet | null;
-  status:     PoseStatus;
-  angle:      number | null;
-  tolerance:  number;
+  videoRef:    RefObject<HTMLVideoElement | null>;
+  landmarks:   LandmarkSet | null;
+  status:      PoseStatus;
+  angle:       number | null;
+  tolerance:   number;
+  targetAngle: number;
+  phase:       TimerPhase;
+  seconds:     number;   // used for countdown overlay
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -43,18 +55,26 @@ export const CameraCanvas = memo(function CameraCanvas({
   status,
   angle,
   tolerance,
+  targetAngle,
+  phase,
+  seconds,
 }: CameraCanvasProps) {
-  const canvasRef    = useRef<HTMLCanvasElement>(null);
-  const landmarksRef = useRef<LandmarkSet | null>(landmarks);
-  const statusRef    = useRef<PoseStatus>(status);
-  const angleRef     = useRef<number | null>(angle);
-  const toleranceRef = useRef<number>(tolerance);
+  const canvasRef     = useRef<HTMLCanvasElement>(null);
+  const landmarksRef  = useRef<LandmarkSet | null>(landmarks);
+  const statusRef     = useRef<PoseStatus>(status);
+  const angleRef      = useRef<number | null>(angle);
+  const toleranceRef  = useRef<number>(tolerance);
+  const targetRef     = useRef<number>(targetAngle);
+  const phaseRef      = useRef<TimerPhase>(phase);
+  const secondsRef    = useRef<number>(seconds);
 
-  // Keep refs in sync so the RAF loop always has fresh values without re-subscribing
-  useEffect(() => { landmarksRef.current = landmarks; }, [landmarks]);
-  useEffect(() => { statusRef.current = status; }, [status]);
-  useEffect(() => { angleRef.current = angle; }, [angle]);
-  useEffect(() => { toleranceRef.current = tolerance; }, [tolerance]);
+  useEffect(() => { landmarksRef.current = landmarks;   }, [landmarks]);
+  useEffect(() => { statusRef.current    = status;      }, [status]);
+  useEffect(() => { angleRef.current     = angle;       }, [angle]);
+  useEffect(() => { toleranceRef.current = tolerance;   }, [tolerance]);
+  useEffect(() => { targetRef.current    = targetAngle; }, [targetAngle]);
+  useEffect(() => { phaseRef.current     = phase;       }, [phase]);
+  useEffect(() => { secondsRef.current   = seconds;     }, [seconds]);
 
   // ── RAF render loop ───────────────────────────────────────────────────────
 
@@ -85,6 +105,14 @@ export const CameraCanvas = memo(function CameraCanvas({
     if (lm) {
       drawPoseOverlay(ctx, lm, statusRef.current, angleRef.current, toleranceRef.current, W, H);
     }
+
+    // Countdown overlay — drawn on top of pose, centered on screen
+    if (phaseRef.current === "countdown") {
+      drawCountdownOverlay(ctx, secondsRef.current, W, H);
+    }
+
+    // Always draw the target angle badge (even when no pose detected)
+    drawTargetBadge(ctx, targetRef.current, phaseRef.current, W);
   }, [videoRef]);
 
   useEffect(() => {
@@ -101,24 +129,21 @@ export const CameraCanvas = memo(function CameraCanvas({
           width:     "100%",
           height:    "100%",
           objectFit: "cover",
-          transform: "scaleX(-1)",   // mirror horizontally
+          transform: "scaleX(-1)",
           display:   "block",
         }}
         playsInline
         muted
       />
-      {/* Pose overlay canvas — sits on top of the video.
-           No scaleX(-1) here: landmarks are already pre-mirrored
-           (x: 1 - rawX) in usePoseDetector, so they match the
-           CSS-mirrored video without any extra transform. */}
+      {/* Pose overlay canvas — landmarks are pre-mirrored in usePoseDetector */}
       <canvas
         ref={canvasRef}
         style={{
-          position:  "absolute",
-          top:       0,
-          left:      0,
-          width:     "100%",
-          height:    "100%",
+          position: "absolute",
+          top:      0,
+          left:     0,
+          width:    "100%",
+          height:   "100%",
         }}
       />
     </div>
@@ -150,35 +175,36 @@ function drawPoseOverlay(
   ctx.lineTo(knee.x, knee.y);
   ctx.lineTo(ankle.x, ankle.y);
   ctx.strokeStyle = color;
-  ctx.lineWidth   = 4;
+  ctx.lineWidth   = 6;        // was 4
   ctx.lineJoin    = "round";
   ctx.stroke();
 
   // ── Angle arc at knee ───────────────────────────────────────────────────
   drawAngleArc(ctx, hip, knee, ankle, color);
 
-  // ── Vertical arrow at knee (professor's desenharSetaVertical) ───────────
-  drawVerticalArrow(ctx, knee, ankle, tolerance);
+  // ── Vertical arrow at knee ───────────────────────────────────────────────
+  drawVerticalArrow(ctx, knee, ankle, tolerance, W);
 
   // ── Landmark circles ────────────────────────────────────────────────────
-  for (const { p, r } of [{ p: hip, r: 7 }, { p: knee, r: 11 }, { p: ankle, r: 7 }]) {
+  for (const { p, r } of [{ p: hip, r: 10 }, { p: knee, r: 15 }, { p: ankle, r: 10 }]) {
     ctx.beginPath();
     ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
     ctx.fillStyle   = color + "cc";
     ctx.fill();
     ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth   = 2;
+    ctx.lineWidth   = 2.5;
     ctx.stroke();
   }
 
   // ── A / B / C labels ────────────────────────────────────────────────────
-  ctx.font         = "bold 14px Barlow, sans-serif";
+  const labelSize = Math.max(16, Math.min(26, W * 0.022));
+  ctx.font         = `bold ${labelSize}px Barlow, sans-serif`;
   ctx.fillStyle    = "#ffffff";
   ctx.textAlign    = "center";
   ctx.textBaseline = "bottom";
-  ctx.fillText("A", hip.x,   hip.y   - 12);
-  ctx.fillText("B", knee.x,  knee.y  - 14);
-  ctx.fillText("C", ankle.x, ankle.y - 12);
+  ctx.fillText("A", hip.x,   hip.y   - 14);
+  ctx.fillText("B", knee.x,  knee.y  - 18);
+  ctx.fillText("C", ankle.x, ankle.y - 14);
 
   // ── Large angle overlay near the knee ───────────────────────────────────
   if (angle !== null) {
@@ -195,7 +221,7 @@ function drawAngleArc(
   C:     { x: number; y: number },
   color: string,
 ): void {
-  const ARC_RADIUS = 38;
+  const ARC_RADIUS = 48;   // was 38
   const a1 = Math.atan2(A.y - B.y, A.x - B.x);
   const a2 = Math.atan2(C.y - B.y, C.x - B.x);
 
@@ -209,51 +235,51 @@ function drawAngleArc(
   ctx.beginPath();
   ctx.arc(B.x, B.y, ARC_RADIUS, a1, a2, false);
   ctx.strokeStyle = color;
-  ctx.lineWidth   = 2;
+  ctx.lineWidth   = 2.5;
   ctx.stroke();
 }
 
-// ── Vertical arrow (from professor's desenharSetaVertical) ────────────────────
+// ── Vertical arrow ────────────────────────────────────────────────────────────
 
 function drawVerticalArrow(
   ctx:       CanvasRenderingContext2D,
   knee:      { x: number; y: number },
   ankle:     { x: number; y: number },
   tolerance: number,
+  W:         number,
 ): void {
   const BCx = ankle.x - knee.x;
   const BCy = ankle.y - knee.y;
   const magBC = Math.hypot(BCx, BCy);
   if (magBC === 0) return;
 
-  // Angle between knee→ankle vector and vertical-down (0, -1) in canvas coords
   const cosDeviation = Math.max(-1, Math.min(1, (-BCy) / magBC));
   const deviationDeg = Math.round(Math.acos(cosDeviation) * 180 / Math.PI);
-  const isVertical = deviationDeg <= tolerance;
+  const isVertical   = deviationDeg <= tolerance;
 
-  // Arrow from knee pointing straight up, height proportional to shin length
   const arrowHeight = magBC * 0.9;
   const xArrow = knee.x;
   const yBase  = knee.y;
   const yTop   = knee.y - arrowHeight;
   const arrowColor = "#1db954";
 
-  // Shaft
+  // Scale arrow width relative to canvas width for mobile
+  const shaftWidth = Math.max(4, W * 0.005);
+  const tw = Math.max(12, W * 0.018);   // arrowhead width
+
   ctx.beginPath();
   ctx.moveTo(xArrow, yBase);
   ctx.lineTo(xArrow, yTop);
   ctx.strokeStyle = arrowColor;
-  ctx.lineWidth   = isVertical ? 5 : 3;
-  ctx.setLineDash(isVertical ? [] : [8, 5]);
+  ctx.lineWidth   = isVertical ? shaftWidth + 2 : shaftWidth;
+  ctx.setLineDash(isVertical ? [] : [10, 6]);
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Arrowhead triangle
-  const tw = isVertical ? 14 : 10;
   ctx.beginPath();
-  ctx.moveTo(xArrow, yTop - 10);
-  ctx.lineTo(xArrow - tw, yTop + 6);
-  ctx.lineTo(xArrow + tw, yTop + 6);
+  ctx.moveTo(xArrow, yTop - 12);
+  ctx.lineTo(xArrow - tw, yTop + 8);
+  ctx.lineTo(xArrow + tw, yTop + 8);
   ctx.closePath();
 
   if (isVertical) {
@@ -261,7 +287,7 @@ function drawVerticalArrow(
     ctx.fill();
   } else {
     ctx.strokeStyle = arrowColor;
-    ctx.lineWidth   = 2.5;
+    ctx.lineWidth   = 3;
     ctx.stroke();
   }
 }
@@ -276,30 +302,124 @@ function drawAngleOverlay(
   W:     number,
 ): void {
   const text = `${angle}°`;
-  // Scale font size relative to canvas width for readability
-  const fontSize = Math.max(36, Math.min(72, W * 0.06));
+  // Bigger font: min 48px, max 96px (was 36..72)
+  const fontSize = Math.max(48, Math.min(96, W * 0.09));
 
-  // Position: to the right and above the knee
-  const xPos = knee.x + 60;
+  const xPos = knee.x + 70;
   const yPos = knee.y - 30;
 
-  // Semi-transparent background pill
   ctx.font = `bold ${fontSize}px "Share Tech Mono", monospace`;
   const metrics = ctx.measureText(text);
-  const padX = 16;
-  const padY = 8;
-  const bgW = metrics.width + padX * 2;
-  const bgH = fontSize + padY * 2;
+  const padX = 18;
+  const padY = 10;
+  const bgW  = metrics.width + padX * 2;
+  const bgH  = fontSize + padY * 2;
 
-  ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
-  roundRect(ctx, xPos - padX, yPos - fontSize - padY + 4, bgW, bgH, 10);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.50)";
+  roundRect(ctx, xPos - padX, yPos - fontSize - padY + 4, bgW, bgH, 12);
   ctx.fill();
 
-  // Text
   ctx.fillStyle    = color;
   ctx.textAlign    = "left";
   ctx.textBaseline = "bottom";
   ctx.fillText(text, xPos, yPos + 4);
+}
+
+// ── Countdown overlay (centered on canvas) ──────────────────────────────────
+
+function drawCountdownOverlay(
+  ctx:     CanvasRenderingContext2D,
+  seconds: number,
+  W:       number,
+  H:       number,
+): void {
+  const cx = W / 2;
+  const cy = H / 2;
+
+  // Dim background
+  ctx.fillStyle = "rgba(0, 0, 0, 0.40)";
+  ctx.fillRect(0, 0, W, H);
+
+  // Outer ring
+  const ringR = Math.min(W, H) * 0.18;
+  ctx.beginPath();
+  ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(255, 183, 0, 0.55)";
+  ctx.lineWidth   = Math.max(3, ringR * 0.07);
+  ctx.stroke();
+
+  // Inner filled circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, ringR * 0.82, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+  ctx.fill();
+
+  // Number
+  const fontSize = Math.max(48, ringR * 1.1);
+  ctx.font         = `bold ${fontSize}px "Share Tech Mono", monospace`;
+  ctx.fillStyle    = "#ffb700";
+  ctx.textAlign    = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(String(seconds), cx, cy);
+
+  // "PREPARE-SE" label
+  const labelSize = Math.max(12, W * 0.018);
+  ctx.font         = `700 ${labelSize}px Barlow, sans-serif`;
+  ctx.fillStyle    = "rgba(255, 255, 255, 0.70)";
+  ctx.textBaseline = "top";
+  ctx.fillText("PREPARE-SE", cx, cy + ringR * 0.55);
+}
+
+// ── Target angle badge (top-right corner) ─────────────────────────────────────
+
+function drawTargetBadge(
+  ctx:   CanvasRenderingContext2D,
+  targetAngle: number,
+  phase: TimerPhase,
+  W:     number,
+): void {
+  if (phase === "idle") return;
+
+  const color    = PHASE_COLOR[phase];
+  const fontSize = Math.max(16, Math.min(28, W * 0.025));
+  const label    = "ALVO";
+  const value    = `${targetAngle}°`;
+  const padding  = 12;
+  const margin   = 16;
+
+  ctx.font = `700 ${fontSize}px Barlow, sans-serif`;
+  const labelW = ctx.measureText(label).width;
+
+  ctx.font = `bold ${fontSize * 1.5}px "Share Tech Mono", monospace`;
+  const valueW = ctx.measureText(value).width;
+
+  const boxW = Math.max(labelW, valueW) + padding * 2;
+  const boxH = fontSize * 3.2;
+  const x    = W - boxW - margin;
+  const y    = margin;
+
+  // Background
+  ctx.fillStyle = "rgba(0,0,0,0.55)";
+  roundRect(ctx, x, y, boxW, boxH, 10);
+  ctx.fill();
+
+  // Border
+  ctx.strokeStyle = color + "88";
+  ctx.lineWidth   = 1.5;
+  ctx.stroke();
+
+  // Label text
+  ctx.font         = `700 ${fontSize * 0.75}px Barlow, sans-serif`;
+  ctx.fillStyle    = "rgba(255,255,255,0.55)";
+  ctx.textAlign    = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText(label, x + boxW / 2, y + padding * 0.6);
+
+  // Value text
+  ctx.font      = `bold ${fontSize * 1.4}px "Share Tech Mono", monospace`;
+  ctx.fillStyle = color;
+  ctx.textBaseline = "top";
+  ctx.fillText(value, x + boxW / 2, y + padding * 0.6 + fontSize * 0.9);
 }
 
 // ── Rounded rectangle helper ──────────────────────────────────────────────────
@@ -320,4 +440,3 @@ function roundRect(
   ctx.arcTo(x, y, x + r, y, r);
   ctx.closePath();
 }
-
