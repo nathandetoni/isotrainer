@@ -467,53 +467,69 @@ select.modal-input   { cursor: pointer; }
 
 /* ── Target angle widget ───────────────────────────────────────────────────── */
 .target-angle-widget {
-  border-radius: var(--r-md);
-  padding:       var(--sp-4) var(--sp-5);
+  border-radius: var(--r-lg);
+  padding:       var(--sp-6) var(--sp-6);
   text-align:    center;
-  transition:    background 0.4s ease;
+  transition:    background 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
   display:       flex;
   flex-direction: column;
   justify-content: center;
+  align-items:   center;
+  gap:           var(--sp-1);
+  position:      relative;
+  overflow:      hidden;
+}
+/* subtle inner shine */
+.target-angle-widget::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 60%);
+  pointer-events: none;
+  border-radius: inherit;
 }
 .target-angle-widget--idle {
   background: var(--color-surface);
   border:     1px solid var(--color-border);
 }
 .target-angle-widget--countdown {
-  background: rgba(255, 183, 0, 0.12);
-  border:     1px solid rgba(255, 183, 0, 0.35);
-  box-shadow: 0 0 16px rgba(255, 183, 0, 0.2);
+  background: rgba(255, 183, 0, 0.14);
+  border:     1px solid rgba(255, 183, 0, 0.50);
+  box-shadow: 0 0 28px rgba(255, 183, 0, 0.25), inset 0 1px 0 rgba(255,183,0,0.12);
 }
 .target-angle-widget--exercise {
   background: rgba(0, 229, 160, 0.12);
-  border:     1px solid rgba(0, 229, 160, 0.35);
-  box-shadow: var(--shadow-glow-accent);
+  border:     1px solid rgba(0, 229, 160, 0.50);
+  box-shadow: 0 0 28px rgba(0, 229, 160, 0.28), inset 0 1px 0 rgba(0,229,160,0.12);
 }
 .target-angle-widget--rest {
   background: rgba(255, 68, 85, 0.12);
-  border:     1px solid rgba(255, 68, 85, 0.35);
-  box-shadow: var(--shadow-glow-red);
+  border:     1px solid rgba(255, 68, 85, 0.50);
+  box-shadow: 0 0 28px rgba(255, 68, 85, 0.28), inset 0 1px 0 rgba(255,68,85,0.12);
 }
 
 .target-angle-label {
-  font-size:      10px;
+  font-size:      11px;
   font-weight:    700;
-  letter-spacing: 3px;
-  color:          rgba(255,255,255,0.55);
+  letter-spacing: 3.5px;
+  text-transform: uppercase;
+  color:          rgba(255,255,255,0.5);
   margin-bottom:  var(--sp-1);
 }
 
 .target-angle-value {
   font-family:    var(--font-mono);
-  font-size:      42px;
-  letter-spacing: 2px;
+  font-size:      64px;
+  letter-spacing: 3px;
   color:          var(--color-white);
-  line-height:    1.1;
+  line-height:    1;
+  text-shadow:    0 0 24px rgba(255,255,255,0.15);
 }
 
 .target-angle-unit {
-  font-size: 22px;
-  opacity:   0.7;
+  font-size: 32px;
+  opacity:   0.65;
+  letter-spacing: 0;
 }
 
 /* ── Timer completion ──────────────────────────────────────────────────────── */
@@ -756,6 +772,18 @@ select.modal-input   { cursor: pointer; }
   
   .timer-display {
     font-size: 42px;
+  }
+
+  .target-angle-value {
+    font-size: 72px;
+  }
+
+  .target-angle-unit {
+    font-size: 36px;
+  }
+
+  .target-angle-label {
+    font-size: 12px;
   }
 }
 

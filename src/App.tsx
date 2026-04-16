@@ -37,10 +37,10 @@ function ExerciseApp() {
   const { start: startTimer, stop: stopTimer, angleLog } = useTimer();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [exportOpen,   setExportOpen]   = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   // BUG B FIX: snapshot the log into state when training completes,
   // so ExportModal always shows the correct session's data.
-  const [exportLog,    setExportLog]    = useState<AngleRecord[]>([]);
+  const [exportLog, setExportLog] = useState<AngleRecord[]>([]);
 
   // Load saved protocol on mount
   useEffect(() => {
@@ -68,10 +68,9 @@ function ExerciseApp() {
   }, [startTimer]);
 
   const handleStop = useCallback(() => {
-    stop();
     stopTimer();
     dispatch({ type: "RESET_TIMER" });
-  }, [stop, stopTimer, dispatch]);
+  }, [stopTimer, dispatch]);
 
   // BUG A FIX: canStart only requires phase === "idle" — not "!isRunning"
   // The old check blocked START when phase was "countdown". Now countdown
@@ -80,9 +79,9 @@ function ExerciseApp() {
   const canStart = state.detectorStatus === "running" && state.phase === "idle";
 
   const statusLabel =
-    state.detectorStatus === "running" ? "● Ao vivo"      :
-    state.detectorStatus === "loading" ? "◌ Carregando…"  :
-    state.detectorStatus === "error"   ? "✕ Erro"         : "○ Offline";
+    state.detectorStatus === "running" ? "● Ao vivo" :
+      state.detectorStatus === "loading" ? "◌ Carregando…" :
+        state.detectorStatus === "error" ? "✕ Erro" : "○ Offline";
 
   return (
     <div className="app-root">
@@ -91,11 +90,10 @@ function ExerciseApp() {
       <header className="app-header">
         <div className="app-logo">ISO<span>TRAINER</span></div>
         <div className="header-right">
-          <span className={`ws-badge ws-badge--${
-            state.detectorStatus === "running"  ? "open"       :
-            state.detectorStatus === "loading"  ? "connecting" :
-            state.detectorStatus === "error"    ? "error"      : "closed"
-          }`}>{statusLabel}</span>
+          <span className={`ws-badge ws-badge--${state.detectorStatus === "running" ? "open" :
+            state.detectorStatus === "loading" ? "connecting" :
+              state.detectorStatus === "error" ? "error" : "closed"
+            }`}>{statusLabel}</span>
           <span className="app-badge">
             {state.activeProtocol ? state.activeProtocol.nome : "Exercício de Parede"}
           </span>
@@ -158,8 +156,8 @@ function ExerciseApp() {
           </div>
 
           <div className="controls">
-            <button className="btn btn--amber"   onClick={() => setSettingsOpen(true)}>SET</button>
-            <button className="btn btn--primary" onClick={handleStart}  disabled={!canStart}>START</button>
+            <button className="btn btn--amber" onClick={() => setSettingsOpen(true)}>SET</button>
+            <button className="btn btn--primary" onClick={handleStart} disabled={!canStart}>START</button>
             <button
               className="btn btn--danger"
               onClick={handleStop}
@@ -174,9 +172,9 @@ function ExerciseApp() {
       <footer className="app-footer">
         <p>
           Powered by <strong>FCMFreire</strong> e <strong>Detoni</strong>. Este aplicativo integra o
-          projeto de pesquisa da doutoranda Claudiana Marcela Siste Charal, sob orientação do
-          Prof. Dr. Wendell A. Lopes, vinculado aos Departamentos de Física e de Educação Física
-          da Universidade Estadual de Maringá (UEM), Maringá, PR, Brasil.
+          projeto de pesquisa da doutoranda <strong>Claudiana Marcela Siste Charal</strong>, sob orientação do
+          <strong> Prof. Dr. Wendell A. Lopes</strong>, vinculado aos Departamentos de Física e de Educação Física
+          da <strong>Universidade Estadual de Maringá (UEM)</strong>, Maringá, PR, Brasil.
         </p>
       </footer>
 
