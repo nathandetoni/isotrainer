@@ -33,7 +33,7 @@ import "./index.css";
 
 function ExerciseApp() {
   const { state, dispatch } = useExerciseStore();
-  const { videoRef, start, stop, listCameras } = usePoseDetector();
+  const { videoRef, start, listCameras } = usePoseDetector();
   const { start: startTimer, stop: stopTimer, angleLog } = useTimer();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
