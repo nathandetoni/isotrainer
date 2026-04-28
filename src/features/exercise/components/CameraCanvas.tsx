@@ -103,7 +103,7 @@ export const CameraCanvas = memo(function CameraCanvas({
 
     const lm = landmarksRef.current;
     if (lm) {
-      drawPoseOverlay(ctx, lm, statusRef.current, angleRef.current, toleranceRef.current, W, H);
+      drawPoseOverlay(ctx, lm, statusRef.current, toleranceRef.current, W, H);
     }
 
     // Countdown overlay — drawn on top of pose, centered on screen
@@ -111,8 +111,12 @@ export const CameraCanvas = memo(function CameraCanvas({
       drawCountdownOverlay(ctx, secondsRef.current, W, H);
     }
 
-    // Always draw the target angle badge (even when no pose detected)
-    drawTargetBadge(ctx, targetRef.current, phaseRef.current, W);
+    // Top HUD: timer (left) + angle (right) — always visible during session
+    const curPhase = phaseRef.current;
+    if (curPhase !== "idle") {
+      drawTimerHUD(ctx, secondsRef.current, curPhase, W);
+      drawAngleHUD(ctx, angleRef.current, statusRef.current, W);
+    }
   }, [videoRef]);
 
   useEffect(() => {
@@ -156,7 +160,6 @@ function drawPoseOverlay(
   ctx: CanvasRenderingContext2D,
   lm: LandmarkSet,
   status: PoseStatus,
-  angle: number | null,
   tolerance: number,
   W: number,
   H: number,
@@ -206,10 +209,7 @@ function drawPoseOverlay(
   ctx.fillText("B", knee.x, knee.y - 18);
   ctx.fillText("C", ankle.x, ankle.y - 14);
 
-  // ── Large angle overlay near the knee ───────────────────────────────────
-  if (angle !== null) {
-    drawAngleOverlay(ctx, knee, angle, color, W);
-  }
+  // Angle readout moved to top-right HUD — no longer drawn near knee
 }
 
 // ── Angle arc ─────────────────────────────────────────────────────────────────
@@ -240,6 +240,10 @@ function drawAngleArc(
 }
 
 // ── Vertical arrow ────────────────────────────────────────────────────────────
+// Perpendicular-to-ground reference arrow drawn from knee downward.
+// Becomes SOLID (filled shaft + filled head) when BC vector is parallel to it,
+// indicating the shin is properly vertical. Otherwise drawn as a thicker
+// dashed line with a hollow arrowhead.
 
 function drawVerticalArrow(
   ctx: CanvasRenderingContext2D,
@@ -253,6 +257,7 @@ function drawVerticalArrow(
   const magBC = Math.hypot(BCx, BCy);
   if (magBC === 0) return;
 
+  // Deviation from pure vertical (downward = negative Y in screen coords)
   const cosDeviation = Math.max(-1, Math.min(1, (-BCy) / magBC));
   const deviationDeg = Math.round(Math.acos(cosDeviation) * 180 / Math.PI);
   const isVertical = deviationDeg <= tolerance;
@@ -261,68 +266,46 @@ function drawVerticalArrow(
   const xArrow = knee.x;
   const yBase = knee.y;
   const yTop = knee.y - arrowHeight;
-  const arrowColor = "#1db954";
+  const arrowColor = isVertical ? "#1db954" : "rgba(29, 185, 84, 0.65)";
 
-  // Scale arrow width relative to canvas width for mobile
-  const shaftWidth = Math.max(4, W * 0.005);
-  const tw = Math.max(12, W * 0.018);   // arrowhead width
+  // Much thicker shaft for mobile visibility
+  const shaftWidth = Math.max(6, W * 0.009);
+  const tw = Math.max(18, W * 0.028);          // arrowhead half-width
+  const headLen = Math.max(16, W * 0.022);      // arrowhead length
 
+  // ── Shaft ──
+  ctx.save();
   ctx.beginPath();
   ctx.moveTo(xArrow, yBase);
-  ctx.lineTo(xArrow, yTop);
+  ctx.lineTo(xArrow, yTop + headLen * 0.5);
   ctx.strokeStyle = arrowColor;
-  ctx.lineWidth = isVertical ? shaftWidth + 2 : shaftWidth;
-  ctx.setLineDash(isVertical ? [] : [10, 6]);
+  ctx.lineWidth = isVertical ? shaftWidth + 3 : shaftWidth;
+  ctx.lineCap = "round";
+  ctx.setLineDash(isVertical ? [] : [14, 8]);
   ctx.stroke();
   ctx.setLineDash([]);
+  ctx.restore();
 
+  // ── Arrowhead ──
   ctx.beginPath();
-  ctx.moveTo(xArrow, yTop - 12);
-  ctx.lineTo(xArrow - tw, yTop + 8);
-  ctx.lineTo(xArrow + tw, yTop + 8);
+  ctx.moveTo(xArrow, yTop - headLen * 0.5);
+  ctx.lineTo(xArrow - tw, yTop + headLen * 0.5);
+  ctx.lineTo(xArrow + tw, yTop + headLen * 0.5);
   ctx.closePath();
 
   if (isVertical) {
-    ctx.fillStyle = arrowColor;
+    // Solid filled arrowhead — BC is parallel to vertical reference
+    ctx.fillStyle = "#1db954";
     ctx.fill();
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2;
+    ctx.stroke();
   } else {
+    // Hollow arrowhead — BC deviates from vertical
     ctx.strokeStyle = arrowColor;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = Math.max(3, W * 0.004);
     ctx.stroke();
   }
-}
-
-// ── Large angle text overlay ──────────────────────────────────────────────────
-
-function drawAngleOverlay(
-  ctx: CanvasRenderingContext2D,
-  knee: { x: number; y: number },
-  angle: number,
-  color: string,
-  W: number,
-): void {
-  const text = `${angle}°`;
-  // Bigger font: min 48px, max 96px (was 36..72)
-  const fontSize = Math.max(48, Math.min(96, W * 0.09));
-
-  const xPos = knee.x + 70;
-  const yPos = knee.y - 30;
-
-  ctx.font = `bold ${fontSize}px "Share Tech Mono", monospace`;
-  const metrics = ctx.measureText(text);
-  const padX = 18;
-  const padY = 10;
-  const bgW = metrics.width + padX * 2;
-  const bgH = fontSize + padY * 2;
-
-  ctx.fillStyle = "rgba(0, 0, 0, 0.50)";
-  roundRect(ctx, xPos - padX, yPos - fontSize - padY + 4, bgW, bgH, 12);
-  ctx.fill();
-
-  ctx.fillStyle = color;
-  ctx.textAlign = "left";
-  ctx.textBaseline = "bottom";
-  ctx.fillText(text, xPos, yPos + 4);
 }
 
 // ── Countdown overlay (centered on canvas) ──────────────────────────────────
@@ -370,83 +353,139 @@ function drawCountdownOverlay(
   ctx.fillText("PREPARE-SE", cx, cy + ringR * 0.55);
 }
 
-// ── Target angle badge (top-right corner) ─────────────────────────────────────
+// ── Top HUD: Timer (left) ─────────────────────────────────────────────────────
+// Displays remaining time and phase label in the top-left corner of the canvas
+// so it's visible on mobile where the side panel scrolls out of view.
 
-function drawTargetBadge(
+function formatHUDTime(seconds: number): string {
+  const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+  const s = (seconds % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
+
+const PHASE_HUD_LABEL: Record<TimerPhase, string> = {
+  idle:      "",
+  countdown: "PREPARAR",
+  exercise:  "EXERCÍCIO",
+  rest:      "DESCANSO",
+};
+
+function drawTimerHUD(
   ctx: CanvasRenderingContext2D,
-  targetAngle: number,
+  seconds: number,
   phase: TimerPhase,
   W: number,
 ): void {
-  if (phase === "idle") return;
-
   const color = PHASE_COLOR[phase];
-  const fontSize = Math.max(24, Math.min(46, W * 0.038));
-
-  const label = "ALVO";
-  const value = `${targetAngle}°`;
-  const padding = Math.max(14, W * 0.018);
   const margin = Math.max(14, W * 0.016);
+  const padding = Math.max(12, W * 0.014);
   const radius = 12;
 
-  // Measure texts for box sizing
-  ctx.font = `700 ${fontSize * 0.55}px Barlow, sans-serif`;
+  const valueFontSize = Math.max(32, Math.min(56, W * 0.05));
+  const labelFontSize = Math.max(10, Math.min(16, W * 0.013));
+
+  const timeText = formatHUDTime(seconds);
+  const label = PHASE_HUD_LABEL[phase];
+
+  // Measure for box sizing
+  ctx.font = `bold ${valueFontSize}px "Share Tech Mono", monospace`;
+  const valueW = ctx.measureText(timeText).width;
+  ctx.font = `700 ${labelFontSize}px Barlow, sans-serif`;
   const labelW = ctx.measureText(label).width;
 
-  ctx.font = `bold ${fontSize * 1.55}px "Share Tech Mono", monospace`;
-  const valueW = ctx.measureText(value).width;
-
-  const boxW = Math.max(labelW, valueW) + padding * 2;
-  const boxH = fontSize * 3.6;
-  const x = W - boxW - margin;   // top-right
+  const boxW = Math.max(valueW, labelW) + padding * 2;
+  const boxH = labelFontSize + valueFontSize + padding * 2.2;
+  const x = margin;
   const y = margin;
 
-  // ── Glow halo ──
+  // Frosted background with glow
   ctx.save();
   ctx.shadowColor = color;
-  ctx.shadowBlur = 22;
-
-  // Frosted-glass background
+  ctx.shadowBlur = 18;
   ctx.fillStyle = "rgba(4, 12, 22, 0.72)";
   roundRect(ctx, x, y, boxW, boxH, radius);
   ctx.fill();
   ctx.restore();
 
-  // ── Border ──
-  ctx.strokeStyle = color + "bb";
-  ctx.lineWidth = 2.5;
+  // Border
+  ctx.strokeStyle = color + "88";
+  ctx.lineWidth = 2;
   roundRect(ctx, x, y, boxW, boxH, radius);
   ctx.stroke();
 
-  // ── Top accent bar (phase color) ──
-  const barH = Math.max(3, fontSize * 0.08);
+  // Phase label
+  ctx.font = `700 ${labelFontSize}px Barlow, sans-serif`;
   ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + boxW - radius, y);
-  ctx.arcTo(x + boxW, y, x + boxW, y + radius, radius);
-  ctx.lineTo(x + boxW, y + barH);
-  ctx.lineTo(x, y + barH);
-  ctx.arcTo(x, y, x + radius, y, radius);
-  ctx.closePath();
-  ctx.fill();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText(label, x + boxW / 2, y + padding * 0.7);
 
-  // ── Label ──
-  ctx.font = `700 ${fontSize * 0.55}px Barlow, sans-serif`;
+  // Time value
+  ctx.font = `bold ${valueFontSize}px "Share Tech Mono", monospace`;
+  ctx.fillStyle = "#ffffff";
+  ctx.textBaseline = "top";
+  ctx.fillText(timeText, x + boxW / 2, y + padding * 0.7 + labelFontSize + 4);
+}
+
+// ── Top HUD: Angle (right) ────────────────────────────────────────────────────
+// Shows the current knee angle as a large number in the top-right corner.
+// No glow effects — clean and readable, especially on mobile.
+
+function drawAngleHUD(
+  ctx: CanvasRenderingContext2D,
+  angle: number | null,
+  status: PoseStatus,
+  W: number,
+): void {
+  const color = angle !== null ? COLOR[status] : "#5a7a8a";
+  const margin = Math.max(14, W * 0.016);
+  const padding = Math.max(12, W * 0.014);
+  const radius = 12;
+
+  const valueFontSize = Math.max(36, Math.min(64, W * 0.055));
+  const labelFontSize = Math.max(10, Math.min(16, W * 0.013));
+
+  const angleText = angle !== null ? `${angle}°` : "--°";
+  const label = "ÂNGULO";
+
+  // Measure
+  ctx.font = `bold ${valueFontSize}px "Share Tech Mono", monospace`;
+  const valueW = ctx.measureText(angleText).width;
+  ctx.font = `700 ${labelFontSize}px Barlow, sans-serif`;
+  const labelW = ctx.measureText(label).width;
+
+  const boxW = Math.max(valueW, labelW) + padding * 2;
+  const boxH = labelFontSize + valueFontSize + padding * 2.2;
+  const x = W - boxW - margin;
+  const y = margin;
+
+  // Background
+  ctx.save();
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 16;
+  ctx.fillStyle = "rgba(4, 12, 22, 0.72)";
+  roundRect(ctx, x, y, boxW, boxH, radius);
+  ctx.fill();
+  ctx.restore();
+
+  // Border
+  ctx.strokeStyle = color + "88";
+  ctx.lineWidth = 2;
+  roundRect(ctx, x, y, boxW, boxH, radius);
+  ctx.stroke();
+
+  // Label
+  ctx.font = `700 ${labelFontSize}px Barlow, sans-serif`;
   ctx.fillStyle = "rgba(255,255,255,0.52)";
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillText(label, x + boxW / 2, y + barH + padding * 0.55);
+  ctx.fillText(label, x + boxW / 2, y + padding * 0.7);
 
-  // ── Value with glow ──
-  ctx.save();
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 14;
-  ctx.font = `bold ${fontSize * 1.55}px "Share Tech Mono", monospace`;
+  // Value
+  ctx.font = `bold ${valueFontSize}px "Share Tech Mono", monospace`;
   ctx.fillStyle = color;
   ctx.textBaseline = "top";
-  ctx.fillText(value, x + boxW / 2, y + barH + padding * 0.55 + fontSize * 0.72);
-  ctx.restore();
+  ctx.fillText(angleText, x + boxW / 2, y + padding * 0.7 + labelFontSize + 4);
 }
 
 // ── Rounded rectangle helper ──────────────────────────────────────────────────

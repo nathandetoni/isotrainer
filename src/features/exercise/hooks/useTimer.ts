@@ -167,6 +167,9 @@ export function useTimer(): UseTimerReturn {
   }, [state.phase, advanceFromCountdown, clearTimer, dispatch]);
 
   // ── Exercise/Rest tick ────────────────────────────────────────────────────
+  // Audio cues:
+  //   - Triple beep (bi-bi-bi) when 30 seconds remain
+  //   - Single beep every second for the last 5 seconds (countdown style)
 
   useEffect(() => {
     if (state.phase !== "exercise" && state.phase !== "rest") return;
@@ -187,7 +190,11 @@ export function useTimer(): UseTimerReturn {
         });
       }
 
-      if (next <= 3 && next > 0) beep();
+      // Triple beep warning at 30 seconds remaining
+      if (next === 30) tripleBeep();
+
+      // Last 5 seconds — single beep each second (countdown style)
+      if (next <= 5 && next > 0) beep(next <= 3 ? 1000 : 880, 0.18, 0.5);
 
       if (next <= 0) {
         advance();
