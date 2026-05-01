@@ -241,9 +241,8 @@ function drawAngleArc(
 
 // ── Vertical arrow ────────────────────────────────────────────────────────────
 // Perpendicular-to-ground reference arrow drawn from knee downward.
-// Becomes SOLID (filled shaft + filled head) when BC vector is parallel to it,
-// indicating the shin is properly vertical. Otherwise drawn as a thicker
-// dashed line with a hollow arrowhead.
+// RED when the shin (BC) is NOT perpendicular — signals correction needed.
+// Turns bright GREEN with glow when BC is properly vertical.
 
 function drawVerticalArrow(
   ctx: CanvasRenderingContext2D,
@@ -266,7 +265,10 @@ function drawVerticalArrow(
   const xArrow = knee.x;
   const yBase = knee.y;
   const yTop = knee.y - arrowHeight;
-  const arrowColor = isVertical ? "#1db954" : "rgba(29, 185, 84, 0.65)";
+
+  // RED when off-vertical, GREEN when perpendicular
+  const colorSolid = isVertical ? "#00e5a0" : "#ff4455";
+  const colorFaded = isVertical ? "rgba(0, 229, 160, 0.85)" : "rgba(255, 68, 85, 0.55)";
 
   // Much thicker shaft for mobile visibility
   const shaftWidth = Math.max(6, W * 0.009);
@@ -275,11 +277,15 @@ function drawVerticalArrow(
 
   // ── Shaft ──
   ctx.save();
+  if (isVertical) {
+    ctx.shadowColor = "#00e5a0";
+    ctx.shadowBlur = 18;
+  }
   ctx.beginPath();
   ctx.moveTo(xArrow, yBase);
   ctx.lineTo(xArrow, yTop + headLen * 0.5);
-  ctx.strokeStyle = arrowColor;
-  ctx.lineWidth = isVertical ? shaftWidth + 3 : shaftWidth;
+  ctx.strokeStyle = isVertical ? colorSolid : colorFaded;
+  ctx.lineWidth = isVertical ? shaftWidth + 4 : shaftWidth;
   ctx.lineCap = "round";
   ctx.setLineDash(isVertical ? [] : [14, 8]);
   ctx.stroke();
@@ -287,6 +293,11 @@ function drawVerticalArrow(
   ctx.restore();
 
   // ── Arrowhead ──
+  ctx.save();
+  if (isVertical) {
+    ctx.shadowColor = "#00e5a0";
+    ctx.shadowBlur = 22;
+  }
   ctx.beginPath();
   ctx.moveTo(xArrow, yTop - headLen * 0.5);
   ctx.lineTo(xArrow - tw, yTop + headLen * 0.5);
@@ -294,18 +305,19 @@ function drawVerticalArrow(
   ctx.closePath();
 
   if (isVertical) {
-    // Solid filled arrowhead — BC is parallel to vertical reference
-    ctx.fillStyle = "#1db954";
+    // Solid bright green filled arrowhead with white outline
+    ctx.fillStyle = colorSolid;
     ctx.fill();
     ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.stroke();
   } else {
-    // Hollow arrowhead — BC deviates from vertical
-    ctx.strokeStyle = arrowColor;
-    ctx.lineWidth = Math.max(3, W * 0.004);
+    // Red hollow arrowhead
+    ctx.strokeStyle = colorFaded;
+    ctx.lineWidth = Math.max(3, W * 0.005);
     ctx.stroke();
   }
+  ctx.restore();
 }
 
 // ── Countdown overlay (centered on canvas) ──────────────────────────────────
@@ -377,12 +389,14 @@ function drawTimerHUD(
   W: number,
 ): void {
   const color = PHASE_COLOR[phase];
+  const isMobile = W < 800;
   const margin = Math.max(14, W * 0.016);
-  const padding = Math.max(12, W * 0.014);
+  const padding = Math.max(isMobile ? 16 : 12, W * 0.014);
   const radius = 12;
 
-  const valueFontSize = Math.max(32, Math.min(56, W * 0.05));
-  const labelFontSize = Math.max(10, Math.min(16, W * 0.013));
+  // Larger fonts on mobile so the HUD is readable over the camera feed
+  const valueFontSize = isMobile ? Math.max(48, W * 0.09) : Math.max(32, Math.min(56, W * 0.05));
+  const labelFontSize = isMobile ? Math.max(14, W * 0.025) : Math.max(10, Math.min(16, W * 0.013));
 
   const timeText = formatHUDTime(seconds);
   const label = PHASE_HUD_LABEL[phase];
@@ -438,12 +452,14 @@ function drawAngleHUD(
   W: number,
 ): void {
   const color = angle !== null ? COLOR[status] : "#5a7a8a";
+  const isMobile = W < 800;
   const margin = Math.max(14, W * 0.016);
-  const padding = Math.max(12, W * 0.014);
+  const padding = Math.max(isMobile ? 16 : 12, W * 0.014);
   const radius = 12;
 
-  const valueFontSize = Math.max(36, Math.min(64, W * 0.055));
-  const labelFontSize = Math.max(10, Math.min(16, W * 0.013));
+  // Larger fonts on mobile so the angle readout is clearly visible
+  const valueFontSize = isMobile ? Math.max(52, W * 0.10) : Math.max(36, Math.min(64, W * 0.055));
+  const labelFontSize = isMobile ? Math.max(14, W * 0.025) : Math.max(10, Math.min(16, W * 0.013));
 
   const angleText = angle !== null ? `${angle}°` : "--°";
   const label = "ÂNGULO";

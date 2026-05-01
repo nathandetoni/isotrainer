@@ -56,7 +56,7 @@ function beep(freq = 880, duration = 0.15, volume = 0.4): void {
   } catch { /* ignore */ }
 }
 
-function tripleBeep():    void { beep(); setTimeout(() => beep(), 200); setTimeout(() => beep(), 400); }
+function tripleBeep():    void { beep(880, 0.2, 0.5); setTimeout(() => beep(880, 0.2, 0.5), 350); setTimeout(() => beep(880, 0.2, 0.5), 700); }
 function quintupleBeep(): void { [0,200,400,600,800].forEach(d => setTimeout(() => beep(), d)); }
 function longBeep():      void { beep(660, 0.4, 0.5); }   // lower tone, longer — countdown done
 
