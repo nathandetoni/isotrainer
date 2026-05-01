@@ -336,8 +336,9 @@ function drawCountdownOverlay(
   ctx.fillStyle = "rgba(0, 0, 0, 0.40)";
   ctx.fillRect(0, 0, W, H);
 
-  // Outer ring
-  const ringR = Math.min(W, H) * 0.18;
+  // Outer ring — larger on mobile for readability
+  const isMobile = W < 800;
+  const ringR = Math.min(W, H) * (isMobile ? 0.28 : 0.18);
   ctx.beginPath();
   ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
   ctx.strokeStyle = "rgba(255, 183, 0, 0.55)";
@@ -350,8 +351,8 @@ function drawCountdownOverlay(
   ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
   ctx.fill();
 
-  // Number
-  const fontSize = Math.max(48, ringR * 1.1);
+  // Number — boosted on mobile
+  const fontSize = isMobile ? Math.max(72, ringR * 1.2) : Math.max(48, ringR * 1.1);
   ctx.font = `bold ${fontSize}px "Share Tech Mono", monospace`;
   ctx.fillStyle = "#ffb700";
   ctx.textAlign = "center";
@@ -359,7 +360,7 @@ function drawCountdownOverlay(
   ctx.fillText(String(seconds), cx, cy);
 
   // "PREPARE-SE" label
-  const labelSize = Math.max(12, W * 0.018);
+  const labelSize = isMobile ? Math.max(18, W * 0.035) : Math.max(12, W * 0.018);
   ctx.font = `700 ${labelSize}px Barlow, sans-serif`;
   ctx.fillStyle = "rgba(255, 255, 255, 0.70)";
   ctx.textBaseline = "top";
