@@ -103,7 +103,7 @@ export const CameraCanvas = memo(function CameraCanvas({
 
     const lm = landmarksRef.current;
     if (lm) {
-      drawPoseOverlay(ctx, lm, statusRef.current, toleranceRef.current, W, H);
+      drawPoseOverlay(ctx, lm, statusRef.current, W, H);
     }
 
     // Countdown overlay — drawn on top of pose, centered on screen
@@ -160,7 +160,6 @@ function drawPoseOverlay(
   ctx: CanvasRenderingContext2D,
   lm: LandmarkSet,
   status: PoseStatus,
-  tolerance: number,
   W: number,
   H: number,
 ): void {
@@ -186,7 +185,7 @@ function drawPoseOverlay(
   drawAngleArc(ctx, hip, knee, ankle, color);
 
   // ── Vertical arrow at knee ───────────────────────────────────────────────
-  drawVerticalArrow(ctx, knee, ankle, tolerance, W);
+  drawVerticalArrow(ctx, knee, ankle, W);
 
   // ── Landmark circles ────────────────────────────────────────────────────
   for (const { p, r } of [{ p: hip, r: 10 }, { p: knee, r: 15 }, { p: ankle, r: 10 }]) {
@@ -248,7 +247,6 @@ function drawVerticalArrow(
   ctx: CanvasRenderingContext2D,
   knee: { x: number; y: number },
   ankle: { x: number; y: number },
-  tolerance: number,
   W: number,
 ): void {
   const BCx = ankle.x - knee.x;
@@ -257,9 +255,12 @@ function drawVerticalArrow(
   if (magBC === 0) return;
 
   // Deviation from pure vertical (downward = negative Y in screen coords)
+  // Uses a dedicated 12° threshold — the config tolerance (typically 3°) is
+  // far too strict for this visual indicator and would never trigger green.
+  const VERTICAL_TOLERANCE_DEG = 12;
   const cosDeviation = Math.max(-1, Math.min(1, (-BCy) / magBC));
   const deviationDeg = Math.round(Math.acos(cosDeviation) * 180 / Math.PI);
-  const isVertical = deviationDeg <= tolerance;
+  const isVertical = deviationDeg <= VERTICAL_TOLERANCE_DEG;
 
   const arrowHeight = magBC * 0.9;
   const xArrow = knee.x;
@@ -394,9 +395,9 @@ function drawTimerHUD(
   const padding = Math.max(isMobile ? 16 : 12, W * 0.014);
   const radius = 12;
 
-  // Larger fonts on mobile so the HUD is readable over the camera feed
-  const valueFontSize = isMobile ? Math.max(48, W * 0.09) : Math.max(32, Math.min(56, W * 0.05));
-  const labelFontSize = isMobile ? Math.max(14, W * 0.025) : Math.max(10, Math.min(16, W * 0.013));
+  // ~120% larger fonts on mobile so the HUD is clearly readable over the camera feed
+  const valueFontSize = isMobile ? Math.max(64, W * 0.13) : Math.max(32, Math.min(56, W * 0.05));
+  const labelFontSize = isMobile ? Math.max(18, W * 0.035) : Math.max(10, Math.min(16, W * 0.013));
 
   const timeText = formatHUDTime(seconds);
   const label = PHASE_HUD_LABEL[phase];
@@ -457,9 +458,9 @@ function drawAngleHUD(
   const padding = Math.max(isMobile ? 16 : 12, W * 0.014);
   const radius = 12;
 
-  // Larger fonts on mobile so the angle readout is clearly visible
-  const valueFontSize = isMobile ? Math.max(52, W * 0.10) : Math.max(36, Math.min(64, W * 0.055));
-  const labelFontSize = isMobile ? Math.max(14, W * 0.025) : Math.max(10, Math.min(16, W * 0.013));
+  // ~120% larger fonts on mobile so the angle readout is clearly visible
+  const valueFontSize = isMobile ? Math.max(68, W * 0.14) : Math.max(36, Math.min(64, W * 0.055));
+  const labelFontSize = isMobile ? Math.max(18, W * 0.035) : Math.max(10, Math.min(16, W * 0.013));
 
   const angleText = angle !== null ? `${angle}°` : "--°";
   const label = "ÂNGULO";
