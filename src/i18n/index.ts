@@ -18,7 +18,10 @@ i18n
   .use(initReactI18next)
   .init({
     resources: {
+      // Register "pt" as an alias so the browser/LanguageDetector
+      // reporting "pt" (without region) still resolves correctly.
       "pt-BR": { translation: ptBR },
+      "pt":    { translation: ptBR },
       en:      { translation: en  },
       es:      { translation: es  },
     },
@@ -27,9 +30,14 @@ i18n
       order: ["localStorage", "navigator"],
       caches: ["localStorage"],
     },
-    fallbackLng: "pt-BR",
-    // Supported languages — prevents falling back to "pt" (without region) unexpectedly
-    supportedLngs: ["pt-BR", "en", "es"],
+    // Explicit fallback map: "pt" and "pt-BR" both resolve to the pt-BR bundle.
+    // All other languages fall back to pt-BR as the global default.
+    fallbackLng: {
+      "pt":      ["pt-BR"],
+      "pt-BR":   ["pt-BR"],
+      "default": ["pt-BR"],
+    },
+    supportedLngs: ["pt-BR", "pt", "en", "es"],
     nonExplicitSupportedLngs: true,
     interpolation: {
       // React already escapes values; disable double-escaping
