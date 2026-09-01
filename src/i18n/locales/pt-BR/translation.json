@@ -2,119 +2,107 @@
   "header": {
     "logo": "ISOTRAINER",
     "status": {
-      "live":        "● Ao vivo",
-      "loading":     "◌ Carregando…",
-      "error":       "✕ Erro",
-      "offline":     "○ Offline"
+      "live": "● Ao vivo",
+      "loading": "◌ Carregando…",
+      "error": "✕ Erro",
+      "offline": "○ Offline"
     },
-    "defaultExercise": "Cadeirinha"
+    "defaultExercise": "Agachamento Isométrico"
   },
-
   "camera": {
     "placeholder": {
-      "icon":    "📷",
+      "icon": "📷",
       "message": "Abra as <strong>configurações</strong> para iniciar a câmera"
     },
     "positionGuide": {
       "label": "GUIA DE POSIÇÃO",
-      "text":  "Posicione-se de lado para a câmera. Mantenha o corpo inteiro visível da cabeça aos pés. A câmera deve estar na altura do joelho, a ~1,5 m."
+      "text": "Posicione-se de lado para a câmera. Mantenha o corpo inteiro visível da cabeça aos pés. A câmera deve estar na altura do joelho, a ~1,5 m."
     }
   },
-
   "controls": {
     "settings": "SET",
-    "start":    "START",
-    "stop":     "STOP"
+    "start": "START",
+    "stop": "STOP"
   },
-
   "footer": {
     "text": "Powered by <strong>FCMFreire</strong> e <strong>Detoni</strong>. Este aplicativo integra o projeto de pesquisa da doutoranda <strong>Claudiana Marcela Siste Charal</strong>, sob orientação do <strong>Prof. Dr. Wendell A. Lopes</strong>, vinculado aos Departamentos de Física e de Educação Física da <strong>Universidade Estadual de Maringá (UEM)</strong>, Maringá, PR, Brasil."
   },
-
   "angleDisplay": {
     "label": "ÂNGULO DO JOELHO",
     "feedback": {
-      "on_target":      "✓ Ângulo correto — mantenha!",
-      "above":          "↓ Abaixe um pouco",
-      "below":          "↑ Vá mais fundo",
-      "no_pose":        "Posicione-se de lado para a câmera…",
+      "on_target": "✓ Ângulo correto — mantenha!",
+      "above": "↓ Abaixe um pouco",
+      "below": "↑ Vá mais fundo",
+      "no_pose": "Posicione-se de lado para a câmera…",
       "low_visibility": "Mantenha quadril, joelho e tornozelo visíveis"
     }
   },
-
   "targetAngleDisplay": {
     "label": "ÂNGULO DESEJADO"
   },
-
   "timerWidget": {
     "phase": {
-      "idle":      "AGUARDANDO INÍCIO",
+      "idle": "AGUARDANDO INÍCIO",
       "countdown": "⏳ PREPARAR…",
-      "exercise":  "▶ EXERCÍCIO",
-      "rest":      "⏸ DESCANSO"
+      "exercise": "▶ EXERCÍCIO",
+      "rest": "⏸ DESCANSO"
     },
     "completed": "✓ TREINO CONCLUÍDO!",
-    "cycle":     "Ciclo {{current}} / {{total}}"
+    "cycle": "Ciclo {{current}} / {{total}}"
   },
-
   "canvas": {
-    "prepare":  "PREPARE-SE",
+    "prepare": "PREPARE-SE",
     "phase": {
-      "idle":      "",
+      "idle": "",
       "countdown": "PREPARAR",
-      "exercise":  "EXERCÍCIO",
-      "rest":      "DESCANSO"
+      "exercise": "EXERCÍCIO",
+      "rest": "DESCANSO"
     },
     "angleLabel": "ÂNGULO"
   },
-
   "settingsModal": {
-    "title":           "⚙ Configurações",
-    "camera":          "Câmera",
+    "title": "⚙ Configurações",
+    "camera": "Câmera",
     "noCameraDetected": "Nenhuma câmera detectada",
-    "tolerance":       "Tolerância (±°)",
-    "cancel":          "Cancelar",
-    "save":            "Salvar e aplicar"
+    "tolerance": "Tolerância (±°)",
+    "cancel": "Cancelar",
+    "save": "Salvar e aplicar"
   },
-
   "protocolList": {
-    "label":    "Protocolos de treino",
-    "empty":    "Nenhum treino criado ainda.",
+    "label": "Protocolos de treino",
+    "empty": "Nenhum treino criado ainda.",
     "createNew": "+ Criar novo treino",
     "editTitle": "Editar",
     "deleteTitle": "Excluir",
-    "rest":     "(D)",
-    "work":     "(T)"
+    "rest": "(D)",
+    "work": "(T)"
   },
-
   "protocolEditor": {
-    "titleNew":    "Novo treino",
-    "titleEdit":   "Editar: {{name}}",
-    "nameLabel":   "Nome do treino",
+    "titleNew": "Novo treino",
+    "titleEdit": "Editar: {{name}}",
+    "nameLabel": "Nome do treino",
     "namePlaceholder": "Ex: Treino Isométrico 1",
-    "phaseTitle":  "Fase {{number}} — {{type}}",
-    "phaseWork":   "Treino",
-    "phaseRest":   "Descanso",
-    "timeLabel":   "Tempo",
-    "angleLabel":  "Ângulo (°)",
-    "restLabel":   "Desc.",
-    "addPhase":    "+ Adicionar nova fase",
+    "phaseTitle": "Fase {{number}} — {{type}}",
+    "phaseWork": "Treino",
+    "phaseRest": "Descanso",
+    "timeLabel": "Tempo",
+    "angleLabel": "Ângulo (°)",
+    "restLabel": "Desc.",
+    "addPhase": "+ Adicionar nova fase",
     "cyclesLabel": "Número de ciclos (repetições)",
-    "cancel":      "Cancelar",
-    "save":        "Salvar treino",
-    "alertName":   "Digite um nome para o treino."
+    "cancel": "Cancelar",
+    "save": "Salvar treino",
+    "alertName": "Digite um nome para o treino."
   },
-
   "exportModal": {
-    "title":            "Treino concluído!",
-    "dataPoints":       "Foram registrados <strong>{{count}}</strong> pontos de ângulo durante o exercício.",
-    "noData":           "Nenhum dado de ângulo foi registrado nesta sessão.",
-    "exportQuestion":   "Deseja exportar os dados em <strong>CSV</strong>?",
-    "close":            "Fechar",
-    "export":           "📥 Exportar CSV",
-    "alertEmpty":       "Nenhum dado registrado."
+    "title": "Treino concluído!",
+    "dataPoints": "Foram registrados <strong>{{count}}</strong> pontos de ângulo durante o exercício.",
+    "noData": "Nenhum dado de ângulo foi registrado nesta sessão.",
+    "exportQuestion": "Deseja exportar os dados em <strong>CSV</strong>?",
+    "close": "Fechar",
+    "export": "📥 Exportar CSV",
+    "alertEmpty": "Nenhum dado registrado."
   },
-
   "protocolDelete": {
     "confirm": "Excluir este treino?"
   }
