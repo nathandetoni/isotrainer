@@ -5,7 +5,7 @@
       "live":        "● En vivo",
       "loading":     "◌ Cargando…",
       "error":       "✕ Error",
-      "offline":     "○ Sin conexión"
+      "offline":     "○ Offilne"
     },
     "defaultExercise": "Sentadilla de Pared"
   },
