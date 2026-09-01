@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect, useCallback, memo } from "react";
+import { useTranslation } from "react-i18next";
 import type { TrainingProtocol, TrainingPhase } from "../store/protocolStore";
 import {
   createNewProtocol,
@@ -29,6 +30,7 @@ export const ProtocolEditor = memo(function ProtocolEditor({
   onSaved,
   editingProtocol,
 }: ProtocolEditorProps) {
+  const { t } = useTranslation();
   const [nome, setNome] = useState("");
   const [ciclos, setCiclos] = useState(10);
   const [fases, setFases] = useState<TrainingPhase[]>(createDefaultPhases());
@@ -64,7 +66,7 @@ export const ProtocolEditor = memo(function ProtocolEditor({
 
   const handleSave = useCallback(() => {
     if (!nome.trim()) {
-      alert("Digite um nome para o treino.");
+      alert(t("protocolEditor.alertName"));
       return;
     }
 
@@ -75,7 +77,7 @@ export const ProtocolEditor = memo(function ProtocolEditor({
     upsertProtocol(proto);
     onSaved();
     onClose();
-  }, [nome, ciclos, fases, editingProtocol, onSaved, onClose]);
+  }, [nome, ciclos, fases, editingProtocol, onSaved, onClose, t]);
 
   const handleTimeBlur = useCallback((idx: number, value: string) => {
     updatePhase(idx, { tempo: parseTime(value) });
@@ -87,16 +89,18 @@ export const ProtocolEditor = memo(function ProtocolEditor({
     <div className="modal-backdrop modal-backdrop--z200" onClick={onClose}>
       <div className="modal-card protocol-editor" onClick={(e) => e.stopPropagation()}>
         <h2 className="modal-title">
-          {editingProtocol ? `Editar: ${editingProtocol.nome}` : "Novo treino"}
+          {editingProtocol
+            ? t("protocolEditor.titleEdit", { name: editingProtocol.nome })
+            : t("protocolEditor.titleNew")}
         </h2>
 
         {/* Protocol name */}
         <div className="modal-field">
-          <label className="modal-label">Nome do treino</label>
+          <label className="modal-label">{t("protocolEditor.nameLabel")}</label>
           <input
             className="modal-input"
             type="text"
-            placeholder="Ex: Treino Isométrico 1"
+            placeholder={t("protocolEditor.namePlaceholder")}
             value={nome}
             onChange={(e) => setNome(e.target.value)}
           />
@@ -111,7 +115,10 @@ export const ProtocolEditor = memo(function ProtocolEditor({
             >
               <div className="phase-header">
                 <span className="phase-title">
-                  Fase {idx + 1} — {fase.descanso ? "Descanso" : "Treino"}
+                  {t("protocolEditor.phaseTitle", {
+                    number: idx + 1,
+                    type: fase.descanso ? t("protocolEditor.phaseRest") : t("protocolEditor.phaseWork"),
+                  })}
                 </span>
                 {fases.length > 2 && (
                   <button
@@ -125,7 +132,7 @@ export const ProtocolEditor = memo(function ProtocolEditor({
 
               <div className="phase-fields">
                 <div className="phase-field">
-                  <label className="modal-label">Tempo</label>
+                  <label className="modal-label">{t("protocolEditor.timeLabel")}</label>
                   <input
                     className="modal-input modal-input--mono"
                     type="text"
@@ -135,7 +142,7 @@ export const ProtocolEditor = memo(function ProtocolEditor({
                   />
                 </div>
                 <div className="phase-field">
-                  <label className="modal-label">Ângulo (°)</label>
+                  <label className="modal-label">{t("protocolEditor.angleLabel")}</label>
                   <input
                     className="modal-input modal-input--mono"
                     type="number"
@@ -146,7 +153,7 @@ export const ProtocolEditor = memo(function ProtocolEditor({
                   />
                 </div>
                 <div className="phase-field phase-field--check">
-                  <label className="modal-label">Desc.</label>
+                  <label className="modal-label">{t("protocolEditor.restLabel")}</label>
                   <input
                     type="checkbox"
                     className="phase-checkbox"
@@ -160,12 +167,12 @@ export const ProtocolEditor = memo(function ProtocolEditor({
         </div>
 
         <button className="btn-add-phase" onClick={addPhase}>
-          + Adicionar nova fase
+          {t("protocolEditor.addPhase")}
         </button>
 
         {/* Cycles */}
         <div className="modal-field">
-          <label className="modal-label">Número de ciclos (repetições)</label>
+          <label className="modal-label">{t("protocolEditor.cyclesLabel")}</label>
           <input
             className="modal-input"
             type="number"
@@ -179,10 +186,10 @@ export const ProtocolEditor = memo(function ProtocolEditor({
         {/* Actions */}
         <div className="modal-actions">
           <button className="btn btn--ghost" onClick={onClose}>
-            Cancelar
+            {t("protocolEditor.cancel")}
           </button>
           <button className="btn btn--primary" onClick={handleSave}>
-            Salvar treino
+            {t("protocolEditor.save")}
           </button>
         </div>
       </div>

@@ -1,0 +1,121 @@
+{
+  "header": {
+    "logo": "ISOTRAINER",
+    "status": {
+      "live":        "● En vivo",
+      "loading":     "◌ Cargando…",
+      "error":       "✕ Error",
+      "offline":     "○ Sin conexión"
+    },
+    "defaultExercise": "Ejercicio de Pared"
+  },
+
+  "camera": {
+    "placeholder": {
+      "icon":    "📷",
+      "message": "Abra la <strong>configuración</strong> para iniciar la cámara"
+    },
+    "positionGuide": {
+      "label": "GUÍA DE POSICIÓN",
+      "text":  "Colóquese de lado frente a la cámara. Mantenga el cuerpo completo visible de la cabeza a los pies. La cámara debe estar a la altura de la rodilla, a ~1,5 m."
+    }
+  },
+
+  "controls": {
+    "settings": "SET",
+    "start":    "START",
+    "stop":     "STOP"
+  },
+
+  "footer": {
+    "text": "Desarrollado por <strong>FCMFreire</strong> y <strong>Detoni</strong>. Esta aplicación forma parte del proyecto de investigación doctoral de <strong>Claudiana Marcela Siste Charal</strong>, bajo la orientación del <strong>Prof. Dr. Wendell A. Lopes</strong>, vinculado a los Departamentos de Física y Educación Física de la <strong>Universidad Estatal de Maringá (UEM)</strong>, Maringá, PR, Brasil."
+  },
+
+  "angleDisplay": {
+    "label": "ÁNGULO DE RODILLA",
+    "feedback": {
+      "on_target":      "✓ Ángulo correcto — ¡mantenga!",
+      "above":          "↓ Baje un poco",
+      "below":          "↑ Vaya más profundo",
+      "no_pose":        "Colóquese de lado frente a la cámara…",
+      "low_visibility": "Mantenga cadera, rodilla y tobillo visibles"
+    }
+  },
+
+  "targetAngleDisplay": {
+    "label": "ÁNGULO DESEADO"
+  },
+
+  "timerWidget": {
+    "phase": {
+      "idle":      "ESPERANDO INICIO",
+      "countdown": "⏳ PREPARAR…",
+      "exercise":  "▶ EJERCICIO",
+      "rest":      "⏸ DESCANSO"
+    },
+    "completed": "✓ ¡ENTRENAMIENTO COMPLETO!",
+    "cycle":     "Ciclo {{current}} / {{total}}"
+  },
+
+  "canvas": {
+    "prepare":  "PREPÁRESE",
+    "phase": {
+      "idle":      "",
+      "countdown": "PREPARAR",
+      "exercise":  "EJERCICIO",
+      "rest":      "DESCANSO"
+    },
+    "angleLabel": "ÁNGULO"
+  },
+
+  "settingsModal": {
+    "title":            "⚙ Configuración",
+    "camera":           "Cámara",
+    "noCameraDetected": "Ninguna cámara detectada",
+    "tolerance":        "Tolerancia (±°)",
+    "cancel":           "Cancelar",
+    "save":             "Guardar y aplicar"
+  },
+
+  "protocolList": {
+    "label":       "Protocolos de entrenamiento",
+    "empty":       "Aún no hay entrenamientos creados.",
+    "createNew":   "+ Crear nuevo entrenamiento",
+    "editTitle":   "Editar",
+    "deleteTitle":  "Eliminar",
+    "rest":        "(D)",
+    "work":        "(T)"
+  },
+
+  "protocolEditor": {
+    "titleNew":        "Nuevo entrenamiento",
+    "titleEdit":       "Editar: {{name}}",
+    "nameLabel":       "Nombre del entrenamiento",
+    "namePlaceholder": "Ej: Entrenamiento Isométrico 1",
+    "phaseTitle":      "Fase {{number}} — {{type}}",
+    "phaseWork":       "Entrenamiento",
+    "phaseRest":       "Descanso",
+    "timeLabel":       "Tiempo",
+    "angleLabel":      "Ángulo (°)",
+    "restLabel":       "Desc.",
+    "addPhase":        "+ Agregar nueva fase",
+    "cyclesLabel":     "Número de ciclos (repeticiones)",
+    "cancel":          "Cancelar",
+    "save":            "Guardar entrenamiento",
+    "alertName":       "Ingrese un nombre para el entrenamiento."
+  },
+
+  "exportModal": {
+    "title":          "¡Entrenamiento completado!",
+    "dataPoints":     "Se registraron <strong>{{count}}</strong> puntos de ángulo durante el ejercicio.",
+    "noData":         "No se registraron datos de ángulo en esta sesión.",
+    "exportQuestion": "¿Desea exportar los datos en <strong>CSV</strong>?",
+    "close":          "Cerrar",
+    "export":         "📥 Exportar CSV",
+    "alertEmpty":     "No hay datos registrados."
+  },
+
+  "protocolDelete": {
+    "confirm": "¿Eliminar este entrenamiento?"
+  }
+}

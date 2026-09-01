@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect, useCallback, memo } from "react";
+import { useTranslation } from "react-i18next";
 import { useExerciseStore } from "../store/exerciseStore";
 import {
   getProtocols,
@@ -38,6 +39,7 @@ export const SettingsModal = memo(function SettingsModal({
   listCameras,
 }: SettingsModalProps) {
   const { state, dispatch } = useExerciseStore();
+  const { t } = useTranslation();
 
   // ── Local state ─────────────────────────────────────────────────────────
   const [cameraId, setCameraId] = useState(state.config.cameraIndex || "");
@@ -152,11 +154,11 @@ export const SettingsModal = memo(function SettingsModal({
           aria-modal="true"
           aria-labelledby="settings-title"
         >
-          <h2 id="settings-title" className="modal-title">⚙ Configurações</h2>
+          <h2 id="settings-title" className="modal-title">{t("settingsModal.title")}</h2>
 
           {/* 1. Camera selection */}
           <div className="modal-field">
-            <label className="modal-label" htmlFor="sel-camera">Câmera</label>
+            <label className="modal-label" htmlFor="sel-camera">{t("settingsModal.camera")}</label>
             <select
               id="sel-camera"
               className="modal-input"
@@ -164,7 +166,7 @@ export const SettingsModal = memo(function SettingsModal({
               onChange={(e) => setCameraId(e.target.value)}
             >
               {state.cameras.length === 0 ? (
-                <option value="">Nenhuma câmera detectada</option>
+                <option value="">{t("settingsModal.noCameraDetected")}</option>
               ) : (
                 state.cameras.map((cam) => (
                   <option key={cam.deviceId} value={cam.deviceId}>
@@ -178,7 +180,7 @@ export const SettingsModal = memo(function SettingsModal({
           {/* 2. Tolerance */}
           <div className="modal-field">
             <label className="modal-label" htmlFor="inp-tolerance">
-              Tolerância (±°)
+              {t("settingsModal.tolerance")}
             </label>
             <input
               id="inp-tolerance"
@@ -204,10 +206,10 @@ export const SettingsModal = memo(function SettingsModal({
           {/* Actions */}
           <div className="modal-actions">
             <button className="btn btn--ghost" onClick={onClose}>
-              Cancelar
+              {t("settingsModal.cancel")}
             </button>
             <button className="btn btn--primary" onClick={handleSave}>
-              Salvar e aplicar
+              {t("settingsModal.save")}
             </button>
           </div>
         </div>

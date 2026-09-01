@@ -6,6 +6,7 @@
  */
 
 import { memo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import type { TrainingProtocol } from "../store/protocolStore";
 import { formatTime } from "../store/protocolStore";
 
@@ -27,18 +28,20 @@ export const ProtocolList = memo(function ProtocolList({
   onCreateNew,
 }: ProtocolListProps) {
 
+  const { t } = useTranslation();
+
   const handleDelete = useCallback((id: string) => {
-    if (confirm("Excluir este treino?")) {
+    if (confirm(t("protocolDelete.confirm"))) {
       onDelete(id);
     }
-  }, [onDelete]);
+  }, [onDelete, t]);
 
   return (
     <div className="protocol-list">
-      <label className="modal-label">Protocolos de treino</label>
+      <label className="modal-label">{t("protocolList.label")}</label>
 
       {protocols.length === 0 ? (
-        <p className="protocol-empty">Nenhum treino criado ainda.</p>
+        <p className="protocol-empty">{t("protocolList.empty")}</p>
       ) : (
         <div className="protocol-items">
           {protocols.map((proto) => (
@@ -51,7 +54,7 @@ export const ProtocolList = memo(function ProtocolList({
                 <span className="protocol-item__name">{proto.nome}</span>
                 <span className="protocol-item__detail">
                   {proto.fases.map((f, i) => (
-                    `F${i + 1}: ${formatTime(f.tempo)}/${f.angulo}°${f.descanso ? "(D)" : "(T)"}`
+                    `F${i + 1}: ${formatTime(f.tempo)}/${f.angulo}°${f.descanso ? t("protocolList.rest") : t("protocolList.work")}`
                   )).join(" · ")}
                   {" · "}{proto.ciclos}x
                 </span>
@@ -60,14 +63,14 @@ export const ProtocolList = memo(function ProtocolList({
                 <button
                   className="protocol-btn protocol-btn--edit"
                   onClick={(e) => { e.stopPropagation(); onEdit(proto); }}
-                  title="Editar"
+                  title={t("protocolList.editTitle")}
                 >
                   ✏️
                 </button>
                 <button
                   className="protocol-btn protocol-btn--delete"
                   onClick={(e) => { e.stopPropagation(); handleDelete(proto.id); }}
-                  title="Excluir"
+                  title={t("protocolList.deleteTitle")}
                 >
                   🗑
                 </button>
@@ -78,7 +81,7 @@ export const ProtocolList = memo(function ProtocolList({
       )}
 
       <button className="btn-add-phase" onClick={onCreateNew}>
-        + Criar novo treino
+        {t("protocolList.createNew")}
       </button>
     </div>
   );

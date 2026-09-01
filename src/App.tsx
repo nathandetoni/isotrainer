@@ -13,6 +13,7 @@
  */
 
 import { useState, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { ExerciseProvider, useExerciseStore } from "./features/exercise/store/exerciseStore";
 import { usePoseDetector } from "./features/exercise/hooks/usePoseDetector";
 import { useTimer } from "./features/exercise/hooks/useTimer";
@@ -23,6 +24,7 @@ import { TargetAngleDisplay } from "./features/exercise/components/TargetAngleDi
 import { SettingsModal } from "./features/exercise/components/SettingsModal";
 import { AngleDisplay } from "./features/exercise/components/AngleDisplay";
 import { ExportModal } from "./features/exercise/components/ExportModal";
+import { LanguageSelector } from "./features/exercise/components/LanguageSelector";
 import {
   getActiveProtocol,
   getActiveProtocolId,
@@ -32,6 +34,7 @@ import "./index.css";
 // ── Inner app (inside the provider) ──────────────────────────────────────────
 
 function ExerciseApp() {
+  const { t } = useTranslation();
   const { state, dispatch } = useExerciseStore();
   const { videoRef, start, listCameras } = usePoseDetector();
   const { start: startTimer, stop: stopTimer, angleLog } = useTimer();
@@ -79,9 +82,9 @@ function ExerciseApp() {
   const canStart = state.detectorStatus === "running" && state.phase === "idle";
 
   const statusLabel =
-    state.detectorStatus === "running" ? "● Ao vivo" :
-      state.detectorStatus === "loading" ? "◌ Carregando…" :
-        state.detectorStatus === "error" ? "✕ Erro" : "○ Offline";
+    state.detectorStatus === "running" ? t("header.status.live") :
+      state.detectorStatus === "loading" ? t("header.status.loading") :
+        state.detectorStatus === "error" ? t("header.status.error") : t("header.status.offline");
 
   return (
     <div className="app-root">
@@ -90,12 +93,13 @@ function ExerciseApp() {
       <header className="app-header">
         <div className="app-logo">ISO<span>TRAINER</span></div>
         <div className="header-right">
+          <LanguageSelector />
           <span className={`ws-badge ws-badge--${state.detectorStatus === "running" ? "open" :
             state.detectorStatus === "loading" ? "connecting" :
               state.detectorStatus === "error" ? "error" : "closed"
             }`}>{statusLabel}</span>
           <span className="app-badge">
-            {state.activeProtocol ? state.activeProtocol.nome : "Exercício de Parede"}
+            {state.activeProtocol ? state.activeProtocol.nome : t("header.defaultExercise")}
           </span>
         </div>
       </header>
@@ -118,18 +122,15 @@ function ExerciseApp() {
             />
             {state.detectorStatus !== "running" && (
               <div className="camera-placeholder">
-                <span className="camera-placeholder__icon">📷</span>
-                <p>Abra as <strong>configurações</strong> para iniciar a câmera</p>
+                <span className="camera-placeholder__icon">{t("camera.placeholder.icon")}</span>
+                <p dangerouslySetInnerHTML={{ __html: t("camera.placeholder.message") }} />
               </div>
             )}
           </div>
 
           <div className="info-card">
-            <p className="info-card__label">GUIA DE POSIÇÃO</p>
-            <p className="info-card__text">
-              Posicione-se de lado para a câmera. Mantenha o corpo inteiro visível
-              da cabeça aos pés. A câmera deve estar na altura do joelho, a ~1,5 m.
-            </p>
+            <p className="info-card__label">{t("camera.positionGuide.label")}</p>
+            <p className="info-card__text">{t("camera.positionGuide.text")}</p>
           </div>
         </section>
 
@@ -156,13 +157,13 @@ function ExerciseApp() {
           </div>
 
           <div className="controls">
-            <button className="btn btn--amber" onClick={() => setSettingsOpen(true)}>SET</button>
-            <button className="btn btn--primary" onClick={handleStart} disabled={!canStart}>START</button>
+            <button className="btn btn--amber" onClick={() => setSettingsOpen(true)}>{t("controls.settings")}</button>
+            <button className="btn btn--primary" onClick={handleStart} disabled={!canStart}>{t("controls.start")}</button>
             <button
               className="btn btn--danger"
               onClick={handleStop}
               disabled={state.detectorStatus !== "running"}
-            >STOP</button>
+            >{t("controls.stop")}</button>
           </div>
 
         </aside>
@@ -170,12 +171,7 @@ function ExerciseApp() {
 
       {/* ── Footer ─────────────────────────────────────────────────────── */}
       <footer className="app-footer">
-        <p>
-          Powered by <strong>FCMFreire</strong> e <strong>Detoni</strong>. Este aplicativo integra o
-          projeto de pesquisa da doutoranda <strong>Claudiana Marcela Siste Charal</strong>, sob orientação do
-          <strong> Prof. Dr. Wendell A. Lopes</strong>, vinculado aos Departamentos de Física e de Educação Física
-          da <strong>Universidade Estadual de Maringá (UEM)</strong>, Maringá, PR, Brasil.
-        </p>
+        <p dangerouslySetInnerHTML={{ __html: t("footer.text") }} />
       </footer>
 
       {/* Modals */}

@@ -6,6 +6,7 @@
  */
 
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 import type { PoseStatus } from "../../../types/protocol";
 
 interface AngleDisplayProps {
@@ -13,26 +14,20 @@ interface AngleDisplayProps {
   status: PoseStatus;
 }
 
-const FEEDBACK: Record<PoseStatus, string> = {
-  on_target:      "✓ Ângulo correto — mantenha!",
-  above:          "↓ Abaixe um pouco",
-  below:          "↑ Vá mais fundo",
-  no_pose:        "Posicione-se de lado para a câmera…",
-  low_visibility: "Mantenha quadril, joelho e tornozelo visíveis",
-};
-
 export const AngleDisplay = memo(function AngleDisplay({
   angle,
   status,
 }: AngleDisplayProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="angle-display">
-      <p className="angle-label">ÂNGULO DO JOELHO</p>
+      <p className="angle-label">{t("angleDisplay.label")}</p>
       <p className={`angle-value angle-value--${status}`}>
         {angle !== null ? `${angle}°` : "--"}
       </p>
       <p className={`angle-feedback angle-feedback--${status}`}>
-        {FEEDBACK[status]}
+        {t(`angleDisplay.feedback.${status}`)}
       </p>
 
       {/* Visual progress bar */}

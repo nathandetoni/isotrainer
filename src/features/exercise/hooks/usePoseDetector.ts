@@ -26,6 +26,7 @@ import {
   FilesetResolver,
   type PoseLandmarkerResult,
 } from "@mediapipe/tasks-vision";
+import i18n from "../../../i18n";
 import { useExerciseStore } from "../store/exerciseStore";
 import { calculateAngle, classifyAngle, AngleStatus } from "../core/angle";
 import type { LandmarkSet } from "../../../types/protocol";
@@ -144,7 +145,7 @@ export function usePoseDetector(): PoseDetectorAPI {
       console.error("[PoseDetector] Camera enumeration failed:", err);
       dispatch({
         type:    "SET_CAMERAS",
-        payload: [{ deviceId: "", name: "Câmera padrão" }],
+        payload: [{ deviceId: "", name: i18n.t("settingsModal.noCameraDetected") }],
       });
     }
   }, [dispatch]);

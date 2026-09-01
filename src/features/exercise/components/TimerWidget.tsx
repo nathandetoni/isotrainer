@@ -6,6 +6,7 @@
  */
 
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 import type { TimerPhase } from "../store/exerciseStore";
 
 interface TimerWidgetProps {
@@ -22,13 +23,6 @@ function formatTime(seconds: number): string {
   return `${m}:${s}`;
 }
 
-const PHASE_LABEL: Record<TimerPhase, string> = {
-  idle:      "AGUARDANDO INÍCIO",
-  countdown: "⏳ PREPARAR…",
-  exercise:  "▶ EXERCÍCIO",
-  rest:      "⏸ DESCANSO",
-};
-
 export const TimerWidget = memo(function TimerWidget({
   phase,
   seconds,
@@ -36,15 +30,17 @@ export const TimerWidget = memo(function TimerWidget({
   targetCycles,
   completed,
 }: TimerWidgetProps) {
+  const { t } = useTranslation();
+
   return (
     <div className={`timer-widget timer-widget--${phase} ${completed ? "timer-widget--completed" : ""}`}>
       <span className="timer-phase-label">
-        {completed ? "✓ TREINO CONCLUÍDO!" : PHASE_LABEL[phase]}
+        {completed ? t("timerWidget.completed") : t(`timerWidget.phase.${phase}`)}
       </span>
       <span className="timer-display">{formatTime(seconds)}</span>
       {cycles > 0 && (
         <span className="timer-cycles">
-          Ciclo {cycles} / {targetCycles}
+          {t("timerWidget.cycle", { current: cycles, total: targetCycles })}
         </span>
       )}
     </div>

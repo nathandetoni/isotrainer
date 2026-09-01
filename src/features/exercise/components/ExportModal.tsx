@@ -6,6 +6,7 @@
  */
 
 import { memo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import type { AngleRecord } from "../hooks/useTimer";
 
 interface ExportModalProps {
@@ -19,9 +20,11 @@ export const ExportModal = memo(function ExportModal({
   onClose,
   log,
 }: ExportModalProps) {
+  const { t } = useTranslation();
+
   const handleExport = useCallback(() => {
     if (log.length === 0) {
-      alert("Nenhum dado registrado.");
+      alert(t("exportModal.alertEmpty"));
       return;
     }
 
@@ -39,7 +42,7 @@ export const ExportModal = memo(function ExportModal({
     a.download = `isoTrainer_${date}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [log]);
+  }, [log, t]);
 
   if (!isOpen) return null;
 
@@ -53,23 +56,27 @@ export const ExportModal = memo(function ExportModal({
         aria-labelledby="export-title"
       >
         <div className="export-icon">✅</div>
-        <h2 id="export-title" className="modal-title">Treino concluído!</h2>
-        <p className="export-description">
-          {log.length > 0
-            ? <>Foram registrados <strong>{log.length}</strong> pontos de ângulo durante o exercício.</>
-            : "Nenhum dado de ângulo foi registrado nesta sessão."}
-        </p>
-        <p className="export-description">
-          Deseja exportar os dados em <strong>CSV</strong>?
-        </p>
+        <h2 id="export-title" className="modal-title">{t("exportModal.title")}</h2>
+        <p
+          className="export-description"
+          dangerouslySetInnerHTML={{
+            __html: log.length > 0
+              ? t("exportModal.dataPoints", { count: log.length })
+              : t("exportModal.noData"),
+          }}
+        />
+        <p
+          className="export-description"
+          dangerouslySetInnerHTML={{ __html: t("exportModal.exportQuestion") }}
+        />
 
         <div className="modal-actions">
           <button className="btn btn--ghost" onClick={onClose}>
-            Fechar
+            {t("exportModal.close")}
           </button>
           {log.length > 0 && (
             <button className="btn btn--primary" onClick={handleExport}>
-              📥 Exportar CSV
+              {t("exportModal.export")}
             </button>
           )}
         </div>

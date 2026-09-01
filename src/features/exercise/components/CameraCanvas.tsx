@@ -14,6 +14,7 @@
  */
 
 import { useEffect, useRef, useCallback, memo, type RefObject } from "react";
+import i18n from "../../../i18n";
 import type { LandmarkSet, PoseStatus } from "../../../types/protocol";
 import type { TimerPhase } from "../store/exerciseStore";
 
@@ -364,7 +365,7 @@ function drawCountdownOverlay(
   ctx.font = `700 ${labelSize}px Barlow, sans-serif`;
   ctx.fillStyle = "rgba(255, 255, 255, 0.70)";
   ctx.textBaseline = "top";
-  ctx.fillText("PREPARE-SE", cx, cy + ringR * 0.55);
+  ctx.fillText(i18n.t("canvas.prepare"), cx, cy + ringR * 0.55);
 }
 
 // ── Top HUD: Timer (left) ─────────────────────────────────────────────────────
@@ -377,12 +378,10 @@ function formatHUDTime(seconds: number): string {
   return `${m}:${s}`;
 }
 
-const PHASE_HUD_LABEL: Record<TimerPhase, string> = {
-  idle:      "",
-  countdown: "PREPARAR",
-  exercise:  "EXERCÍCIO",
-  rest:      "DESCANSO",
-};
+// Phase label read from i18n at draw time so language changes take effect on the next frame
+function getPhaseHUDLabel(phase: TimerPhase): string {
+  return i18n.t(`canvas.phase.${phase}`);
+}
 
 function drawTimerHUD(
   ctx: CanvasRenderingContext2D,
@@ -401,7 +400,7 @@ function drawTimerHUD(
   const labelFontSize = isMobile ? Math.max(18, W * 0.035) : Math.max(10, Math.min(16, W * 0.013));
 
   const timeText = formatHUDTime(seconds);
-  const label = PHASE_HUD_LABEL[phase];
+  const label = getPhaseHUDLabel(phase);
 
   // Measure for box sizing
   ctx.font = `bold ${valueFontSize}px "Share Tech Mono", monospace`;
@@ -464,7 +463,7 @@ function drawAngleHUD(
   const labelFontSize = isMobile ? Math.max(18, W * 0.035) : Math.max(10, Math.min(16, W * 0.013));
 
   const angleText = angle !== null ? `${angle}°` : "--°";
-  const label = "ÂNGULO";
+  const label = i18n.t("canvas.angleLabel");
 
   // Measure
   ctx.font = `bold ${valueFontSize}px "Share Tech Mono", monospace`;

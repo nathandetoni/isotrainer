@@ -7,6 +7,7 @@
  */
 
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 import type { TimerPhase } from "../store/exerciseStore";
 
 interface TargetAngleDisplayProps {
@@ -18,9 +19,11 @@ export const TargetAngleDisplay = memo(function TargetAngleDisplay({
   targetAngle,
   phase,
 }: TargetAngleDisplayProps) {
+  const { t } = useTranslation();
+
   return (
     <div className={`target-angle-widget target-angle-widget--${phase}`}>
-      <span className="target-angle-label">ÂNGULO DESEJADO</span>
+      <span className="target-angle-label">{t("targetAngleDisplay.label")}</span>
       <span className="target-angle-value">
         {phase === "idle" ? "--" : targetAngle}
         <span className="target-angle-unit">°</span>

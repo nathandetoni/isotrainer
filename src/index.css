@@ -825,3 +825,57 @@ select.modal-input   { cursor: pointer; }
   color: var(--color-text);
   font-weight: 600;
 }
+
+/* ── Language selector ─────────────────────────────────────────────────────── */
+.lang-selector {
+  display:     flex;
+  align-items: center;
+  gap:         2px;
+  background:  rgba(13, 26, 42, 0.7);
+  border:      1px solid var(--color-border);
+  border-radius: 99px;
+  padding:     3px;
+  backdrop-filter: blur(8px);
+}
+
+.lang-btn {
+  display:       flex;
+  align-items:   center;
+  gap:           4px;
+  padding:       3px 9px;
+  border:        1px solid transparent;
+  border-radius: 99px;
+  background:    transparent;
+  color:         var(--color-text-muted);
+  font-family:   var(--font-body);
+  font-size:     11px;
+  font-weight:   700;
+  letter-spacing: 0.5px;
+  cursor:        pointer;
+  transition:    background 0.18s, color 0.18s, border-color 0.18s;
+  white-space:   nowrap;
+}
+
+.lang-btn:hover {
+  background: var(--color-surface-2);
+  color:      var(--color-text);
+}
+
+.lang-btn--active {
+  background:   rgba(0, 229, 160, 0.12);
+  border-color: rgba(0, 229, 160, 0.35);
+  color:        var(--color-accent);
+  box-shadow:   0 0 8px rgba(0, 229, 160, 0.15);
+}
+
+.lang-btn__flag {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.lang-btn__label {
+  font-size:      10px;
+  font-weight:    700;
+  letter-spacing: 1px;
+}
+
