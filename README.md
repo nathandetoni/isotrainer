@@ -85,7 +85,7 @@ Tauri (Rust)            ← Apenas gerencia a janela nativa
 
 © 2026 Nathan Moreira Detoni. Todos os direitos reservados.
 
-Este software e seu código-fonte são propriedade exclusiva de **Nathan Moreira Detoni**.
+Este software e seu código-fonte são propriedade exclusiva de **Nathan Moreira Detoni e Fernando Carlos Messias Freire**.
 É **proibida** a reprodução, distribuição, modificação ou uso comercial parcial ou total
 sem autorização expressa e por escrito do autor.
 
