@@ -40,6 +40,12 @@ export interface ExerciseState {
   cycles:           number;
   cameras:          CameraDevice[];
   detectorStatus:   DetectorStatus;
+  /**
+   * i18n key describing why the detector failed (null when there is no error).
+   * Surfaced to the user in the camera placeholder — previously these failures
+   * were only logged to the console, leaving mobile users with a bare "✕ Erro".
+   */
+  detectorError:    string | null;
   // Protocol support
   activeProtocol:   TrainingProtocol | null;
   phaseIndex:       number;         // index within protocol.fases[]
@@ -71,6 +77,7 @@ export const INITIAL_STATE: ExerciseState = {
   cycles:           0,
   cameras:          [],
   detectorStatus:   "idle",
+  detectorError:    null,
   activeProtocol:   null,
   phaseIndex:       0,
   targetCycles:     10,
@@ -85,6 +92,7 @@ export type ExerciseAction =
   | { type: "SET_POSE_LANDMARKS"; payload: { status: PoseStatus; landmarks: LandmarkSet | null } }
   | { type: "SET_CAMERAS";         payload: CameraDevice[] }
   | { type: "SET_DETECTOR_STATUS"; payload: DetectorStatus }
+  | { type: "SET_DETECTOR_ERROR";  payload: string }
   | { type: "SET_PHASE";           payload: TimerPhase }
   | { type: "SET_SECONDS";         payload: number }
   | { type: "INCREMENT_CYCLES" }
@@ -107,7 +115,14 @@ function reducer(state: ExerciseState, action: ExerciseAction): ExerciseState {
     case "SET_CAMERAS":
       return { ...state, cameras: action.payload };
     case "SET_DETECTOR_STATUS":
-      return { ...state, detectorStatus: action.payload };
+      // Any non-error status clears a previously reported failure.
+      return {
+        ...state,
+        detectorStatus: action.payload,
+        detectorError:  action.payload === "error" ? state.detectorError : null,
+      };
+    case "SET_DETECTOR_ERROR":
+      return { ...state, detectorStatus: "error", detectorError: action.payload };
     case "SET_PHASE":
       return { ...state, phase: action.payload };
     case "SET_SECONDS":

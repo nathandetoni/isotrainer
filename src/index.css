@@ -203,6 +203,13 @@ body {
   opacity:   0.35;
 }
 
+.camera-placeholder__error {
+  max-width:   min(420px, 88%);
+  text-align:  center;
+  line-height: 1.5;
+  color:       var(--color-red);
+}
+
 /* Position guide card */
 .info-card {
   background:    var(--color-surface);

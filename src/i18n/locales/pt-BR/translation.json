@@ -17,6 +17,15 @@
     "positionGuide": {
       "label": "GUIA DE POSIÇÃO",
       "text": "Posicione-se de lado para a câmera. Mantenha o corpo inteiro visível da cabeça aos pés. A câmera deve estar na altura do joelho, a ~1,5 m."
+    },
+    "error": {
+      "denied": "Permissão de câmera negada. No iPhone: Ajustes ▸ Safari ▸ Câmera ▸ Perguntar/Permitir, ou toque em «aA» na barra de endereço ▸ Ajustes do site ▸ Câmera.",
+      "notFound": "Nenhuma câmera encontrada neste dispositivo.",
+      "inUse": "A câmera está sendo usada por outro aplicativo. Feche-o e tente novamente.",
+      "overconstrained": "A câmera selecionada não está mais disponível. Toque em SET e escolha outra.",
+      "unsupported": "Este navegador não permite acesso à câmera. Abra o link no Safari (iPhone) ou Chrome (Android) — navegadores dentro de apps como Instagram não funcionam.",
+      "unknown": "Não foi possível iniciar a câmera. Recarregue a página e tente novamente.",
+      "retry": "Tentar novamente"
     }
   },
   "controls": {

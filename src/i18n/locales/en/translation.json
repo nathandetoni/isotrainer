@@ -2,119 +2,116 @@
   "header": {
     "logo": "ISOTRAINER",
     "status": {
-      "live":        "● Live",
-      "loading":     "◌ Loading…",
-      "error":       "✕ Error",
-      "offline":     "○ Offline"
+      "live": "● Live",
+      "loading": "◌ Loading…",
+      "error": "✕ Error",
+      "offline": "○ Offline"
     },
     "defaultExercise": "Wall Sit"
   },
-
   "camera": {
     "placeholder": {
-      "icon":    "📷",
+      "icon": "📷",
       "message": "Open <strong>settings</strong> to start the camera"
     },
     "positionGuide": {
       "label": "POSITION GUIDE",
-      "text":  "Stand sideways to the camera. Keep your full body visible from head to toe. Camera should be at knee height, ~1.5 m away."
+      "text": "Stand sideways to the camera. Keep your full body visible from head to toe. Camera should be at knee height, ~1.5 m away."
+    },
+    "error": {
+      "denied": "Camera permission denied. On iPhone: Settings ▸ Safari ▸ Camera ▸ Ask/Allow, or tap «aA» in the address bar ▸ Website Settings ▸ Camera.",
+      "notFound": "No camera found on this device.",
+      "inUse": "The camera is in use by another app. Close it and try again.",
+      "overconstrained": "The selected camera is no longer available. Tap SET and pick another one.",
+      "unsupported": "This browser does not allow camera access. Open the link in Safari (iPhone) or Chrome (Android) — in-app browsers such as Instagram will not work.",
+      "unknown": "Could not start the camera. Reload the page and try again.",
+      "retry": "Try again"
     }
   },
-
   "controls": {
     "settings": "SET",
-    "start":    "START",
-    "stop":     "STOP"
+    "start": "START",
+    "stop": "STOP"
   },
-
   "footer": {
     "text": "Powered by <strong>FCMFreire</strong> and <strong>Detoni</strong>. This application is part of the doctoral research project by <strong>Claudiana Marcela Siste Charal</strong>, supervised by <strong>Prof. Dr. Wendell A. Lopes</strong>, affiliated with the Departments of Physics and Physical Education at <strong>State University of Maringá (UEM)</strong>, Maringá, PR, Brazil."
   },
-
   "angleDisplay": {
     "label": "KNEE ANGLE",
     "feedback": {
-      "on_target":      "✓ Correct angle — hold it!",
-      "above":          "↓ Lower a bit",
-      "below":          "↑ Go deeper",
-      "no_pose":        "Stand sideways to the camera…",
+      "on_target": "✓ Correct angle — hold it!",
+      "above": "↓ Lower a bit",
+      "below": "↑ Go deeper",
+      "no_pose": "Stand sideways to the camera…",
       "low_visibility": "Keep hip, knee and ankle visible"
     }
   },
-
   "targetAngleDisplay": {
     "label": "TARGET ANGLE"
   },
-
   "timerWidget": {
     "phase": {
-      "idle":      "WAITING TO START",
+      "idle": "WAITING TO START",
       "countdown": "⏳ GET READY…",
-      "exercise":  "▶ EXERCISE",
-      "rest":      "⏸ REST"
+      "exercise": "▶ EXERCISE",
+      "rest": "⏸ REST"
     },
     "completed": "✓ WORKOUT COMPLETE!",
-    "cycle":     "Cycle {{current}} / {{total}}"
+    "cycle": "Cycle {{current}} / {{total}}"
   },
-
   "canvas": {
-    "prepare":  "GET READY",
+    "prepare": "GET READY",
     "phase": {
-      "idle":      "",
+      "idle": "",
       "countdown": "PREPARE",
-      "exercise":  "EXERCISE",
-      "rest":      "REST"
+      "exercise": "EXERCISE",
+      "rest": "REST"
     },
     "angleLabel": "ANGLE"
   },
-
   "settingsModal": {
-    "title":            "⚙ Settings",
-    "camera":           "Camera",
+    "title": "⚙ Settings",
+    "camera": "Camera",
     "noCameraDetected": "No camera detected",
-    "tolerance":        "Tolerance (±°)",
-    "cancel":           "Cancel",
-    "save":             "Save and apply"
+    "tolerance": "Tolerance (±°)",
+    "cancel": "Cancel",
+    "save": "Save and apply"
   },
-
   "protocolList": {
-    "label":       "Training protocols",
-    "empty":       "No workouts created yet.",
-    "createNew":   "+ Create new workout",
-    "editTitle":   "Edit",
-    "deleteTitle":  "Delete",
-    "rest":        "(R)",
-    "work":        "(W)"
+    "label": "Training protocols",
+    "empty": "No workouts created yet.",
+    "createNew": "+ Create new workout",
+    "editTitle": "Edit",
+    "deleteTitle": "Delete",
+    "rest": "(R)",
+    "work": "(W)"
   },
-
   "protocolEditor": {
-    "titleNew":        "New workout",
-    "titleEdit":       "Edit: {{name}}",
-    "nameLabel":       "Workout name",
+    "titleNew": "New workout",
+    "titleEdit": "Edit: {{name}}",
+    "nameLabel": "Workout name",
     "namePlaceholder": "E.g.: Isometric Workout 1",
-    "phaseTitle":      "Phase {{number}} — {{type}}",
-    "phaseWork":       "Work",
-    "phaseRest":       "Rest",
-    "timeLabel":       "Time",
-    "angleLabel":      "Angle (°)",
-    "restLabel":       "Rest",
-    "addPhase":        "+ Add new phase",
-    "cyclesLabel":     "Number of cycles (reps)",
-    "cancel":          "Cancel",
-    "save":            "Save workout",
-    "alertName":       "Please enter a name for the workout."
+    "phaseTitle": "Phase {{number}} — {{type}}",
+    "phaseWork": "Work",
+    "phaseRest": "Rest",
+    "timeLabel": "Time",
+    "angleLabel": "Angle (°)",
+    "restLabel": "Rest",
+    "addPhase": "+ Add new phase",
+    "cyclesLabel": "Number of cycles (reps)",
+    "cancel": "Cancel",
+    "save": "Save workout",
+    "alertName": "Please enter a name for the workout."
   },
-
   "exportModal": {
-    "title":          "Workout complete!",
-    "dataPoints":     "<strong>{{count}}</strong> angle data points were recorded during the exercise.",
-    "noData":         "No angle data was recorded in this session.",
+    "title": "Workout complete!",
+    "dataPoints": "<strong>{{count}}</strong> angle data points were recorded during the exercise.",
+    "noData": "No angle data was recorded in this session.",
     "exportQuestion": "Do you want to export the data as <strong>CSV</strong>?",
-    "close":          "Close",
-    "export":         "📥 Export CSV",
-    "alertEmpty":     "No data recorded."
+    "close": "Close",
+    "export": "📥 Export CSV",
+    "alertEmpty": "No data recorded."
   },
-
   "protocolDelete": {
     "confirm": "Delete this workout?"
   }

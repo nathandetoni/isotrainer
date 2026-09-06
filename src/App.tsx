@@ -66,6 +66,14 @@ function ExerciseApp() {
     await start(deviceId);
   }, [start]);
 
+  /**
+   * Retry from the placeholder. Runs inside a user gesture, which is the most
+   * reliable context for iOS Safari to (re)show the permission prompt.
+   */
+  const handleRetryCamera = useCallback(() => {
+    void start(state.config.cameraIndex);
+  }, [start, state.config.cameraIndex]);
+
   const handleStart = useCallback(() => {
     startTimer();
   }, [startTimer]);
@@ -122,8 +130,25 @@ function ExerciseApp() {
             />
             {state.detectorStatus !== "running" && (
               <div className="camera-placeholder">
-                <span className="camera-placeholder__icon">{t("camera.placeholder.icon")}</span>
-                <p dangerouslySetInnerHTML={{ __html: t("camera.placeholder.message") }} />
+                {state.detectorError ? (
+                  <>
+                    {/* Actionable failure message — camera errors used to be
+                        console-only, which left mobile users with no clue why
+                        the feed never appeared. */}
+                    <span className="camera-placeholder__icon">⚠️</span>
+                    <p className="camera-placeholder__error" role="alert">
+                      {t(state.detectorError)}
+                    </p>
+                    <button className="btn btn--amber" onClick={handleRetryCamera}>
+                      {t("camera.error.retry")}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="camera-placeholder__icon">{t("camera.placeholder.icon")}</span>
+                    <p dangerouslySetInnerHTML={{ __html: t("camera.placeholder.message") }} />
+                  </>
+                )}
               </div>
             )}
           </div>

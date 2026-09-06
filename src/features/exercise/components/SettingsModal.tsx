@@ -74,13 +74,19 @@ export const SettingsModal = memo(function SettingsModal({
     }
   }, [isOpen, listCameras, configTolerance, configCameraIndex]);
 
-  // Pre-select first camera if none selected
+  // Pre-select a camera, and drop a selection that no longer exists.
+  // iOS Safari rotates deviceIds between sessions, so a previously saved id
+  // can disappear from the list — keeping it selected would send an invalid
+  // deviceId to getUserMedia and the camera would never start.
   useEffect(() => {
-    if (state.cameras.length > 0 && !cameraId) {
-      const savedCam = getSavedCameraId();
-      const id = savedCam || state.cameras[0].deviceId;
-      setCameraId(id);
-    }
+    if (state.cameras.length === 0) return;
+
+    const isKnown = state.cameras.some((c) => c.deviceId === cameraId);
+    if (cameraId && isKnown) return;
+
+    const savedCam = getSavedCameraId();
+    const savedIsKnown = savedCam && state.cameras.some((c) => c.deviceId === savedCam);
+    setCameraId(savedIsKnown ? savedCam : state.cameras[0].deviceId);
   }, [state.cameras, cameraId]);
 
   // ── Protocol handlers ───────────────────────────────────────────────────

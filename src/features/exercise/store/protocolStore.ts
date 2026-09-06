@@ -101,6 +101,19 @@ export function saveCameraId(deviceId: string): void {
   localStorage.setItem(CAMERA_KEY, deviceId);
 }
 
+/**
+ * Drop the persisted camera id.
+ *
+ * iOS Safari rotates `deviceId` values between sessions, so an id saved on a
+ * previous visit can silently stop resolving. Requesting it with
+ * `deviceId: { exact }` then throws OverconstrainedError *before* the browser
+ * ever shows the camera prompt, which reads to the user as "the camera was
+ * never requested". Callers prune the stale id once enumeration proves it gone.
+ */
+export function clearSavedCameraId(): void {
+  localStorage.removeItem(CAMERA_KEY);
+}
+
 // ── Default protocol factory ──────────────────────────────────────────────────
 
 export function createDefaultPhases(): TrainingPhase[] {

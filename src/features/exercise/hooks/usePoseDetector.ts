@@ -29,6 +29,7 @@ import {
 import i18n from "../../../i18n";
 import { useExerciseStore } from "../store/exerciseStore";
 import { calculateAngle, classifyAngle, AngleStatus } from "../core/angle";
+import { getSavedCameraId, clearSavedCameraId } from "../store/protocolStore";
 import type { LandmarkSet } from "../../../types/protocol";
 
 // ── MediaPipe landmark indices ────────────────────────────────────────────────
@@ -43,6 +44,46 @@ const LM = {
 } as const;
 
 const VISIBILITY_THRESHOLD = 0.5;
+
+// ── Camera capability + error mapping ─────────────────────────────────────────
+
+/**
+ * True when the browser exposes a usable getUserMedia.
+ *
+ * Returns false in two situations that are common on phones and produce the
+ * exact symptom "the camera prompt never appears":
+ *   - insecure context (plain http:// on a LAN IP) — `mediaDevices` is undefined
+ *   - iOS in-app browsers (Instagram, Facebook, LinkedIn webviews), which strip
+ *     camera access from WKWebView entirely
+ */
+function hasMediaSupport(): boolean {
+  return typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
+}
+
+/**
+ * Map a getUserMedia rejection to a translation key under `camera.error.*`,
+ * so the user gets an actionable message instead of a bare "✕ Erro".
+ */
+function mediaErrorKey(err: unknown): string {
+  const name = (err as { name?: string } | null)?.name ?? "";
+
+  switch (name) {
+    case "NotAllowedError":
+    case "SecurityError":
+      return "camera.error.denied";
+    case "NotFoundError":
+    case "DevicesNotFoundError":
+      return "camera.error.notFound";
+    case "NotReadableError":
+    case "TrackStartError":
+      return "camera.error.inUse";
+    case "OverconstrainedError":
+    case "ConstraintNotSatisfiedError":
+      return "camera.error.overconstrained";
+    default:
+      return "camera.error.unknown";
+  }
+}
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
@@ -124,12 +165,24 @@ export function usePoseDetector(): PoseDetectorAPI {
   // ── Camera enumeration ────────────────────────────────────────────────────
 
   const listCameras = useCallback(async () => {
+    if (!hasMediaSupport()) {
+      dispatch({ type: "SET_DETECTOR_ERROR", payload: "camera.error.unsupported" });
+      dispatch({ type: "SET_CAMERAS", payload: [] });
+      return;
+    }
+
     try {
+      // Labels are only exposed after permission is granted, so ask first.
+      // A rejection here is not fatal: enumeration still lists the devices
+      // (unlabelled), and start() will trigger the prompt again.
       try {
         const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
         tempStream.getTracks().forEach((t) => t.stop());
-      } catch {
-        console.warn("[PoseDetector] getUserMedia for permissions failed — continuing with enumeration");
+      } catch (permErr) {
+        console.warn("[PoseDetector] permission probe failed:", permErr);
+        if ((permErr as { name?: string })?.name === "NotAllowedError") {
+          dispatch({ type: "SET_DETECTOR_ERROR", payload: "camera.error.denied" });
+        }
       }
 
       const devices = await navigator.mediaDevices.enumerateDevices();
@@ -137,16 +190,23 @@ export function usePoseDetector(): PoseDetectorAPI {
         .filter((d) => d.kind === "videoinput")
         .map((d, i) => ({
           deviceId: d.deviceId,
-          name:     d.label || `Camera ${i}`,
+          name:     d.label || `${i18n.t("settingsModal.camera")} ${i + 1}`,
         }));
+
+      // Prune a persisted deviceId that no longer exists (iOS rotates them
+      // between sessions). Left in place it would make start() fail with
+      // OverconstrainedError before any prompt is shown.
+      const savedId = getSavedCameraId();
+      if (savedId && !cameras.some((c) => c.deviceId === savedId)) {
+        clearSavedCameraId();
+        dispatch({ type: "SET_CONFIG", payload: { cameraIndex: "" } });
+      }
 
       dispatch({ type: "SET_CAMERAS", payload: cameras });
     } catch (err) {
       console.error("[PoseDetector] Camera enumeration failed:", err);
-      dispatch({
-        type:    "SET_CAMERAS",
-        payload: [{ deviceId: "", name: i18n.t("settingsModal.noCameraDetected") }],
-      });
+      dispatch({ type: "SET_CAMERAS", payload: [] });
+      dispatch({ type: "SET_DETECTOR_ERROR", payload: mediaErrorKey(err) });
     }
   }, [dispatch]);
 
@@ -238,28 +298,88 @@ export function usePoseDetector(): PoseDetectorAPI {
   const start = useCallback(async (deviceId: string) => {
     if (isRunningRef.current) stop();
 
+    if (!hasMediaSupport()) {
+      dispatch({ type: "SET_DETECTOR_ERROR", payload: "camera.error.unsupported" });
+      return;
+    }
+
     try {
       const landmarker = await ensureLandmarker();
 
-      const videoConstraints: MediaTrackConstraints = deviceId
-        ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
-        : { width: { ideal: 1280 }, height: { ideal: 720 } };
+      const resolution = { width: { ideal: 1280 }, height: { ideal: 720 } };
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: videoConstraints,
-        audio: false,
-      });
+      // Constraint cascade — each step is weaker than the last.
+      //
+      // The exact-deviceId request is tried first (it honours the user's camera
+      // pick) but must never be the only attempt: on iOS Safari a deviceId
+      // persisted from a previous session is frequently invalid, and `exact`
+      // then throws OverconstrainedError *before* the permission prompt is
+      // shown. Falling back to facingMode and finally to a bare `{ video: true }`
+      // — a request iOS always accepts — guarantees the prompt appears.
+      const attempts: MediaStreamConstraints[] = [
+        ...(deviceId
+          ? [{ video: { deviceId: { exact: deviceId }, ...resolution }, audio: false }]
+          : []),
+        { video: { facingMode: { ideal: "environment" }, ...resolution }, audio: false },
+        { video: true, audio: false },
+      ];
+
+      let stream: MediaStream | null = null;
+      let lastError: unknown = null;
+
+      for (const constraints of attempts) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+          break;
+        } catch (err) {
+          lastError = err;
+          console.warn("[PoseDetector] getUserMedia rejected for", constraints, err);
+          // The user actively denied access — retrying only re-prompts in vain.
+          if ((err as { name?: string })?.name === "NotAllowedError") break;
+        }
+      }
+
+      if (!stream) {
+        // A stale saved id is the most likely cause of an exact-id failure;
+        // drop it so the next attempt starts clean.
+        if ((lastError as { name?: string })?.name === "OverconstrainedError") {
+          clearSavedCameraId();
+        }
+        dispatch({ type: "SET_DETECTOR_ERROR", payload: mediaErrorKey(lastError) });
+        return;
+      }
 
       streamRef.current = stream;
       const video = videoRef.current;
-      if (!video) return;
+      if (!video) {
+        stream.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+        return;
+      }
 
       video.srcObject = stream;
 
+      // Wait for the first frame. `onloadeddata` never fires if the data is
+      // already there, so check readyState first; the timeout keeps a silent
+      // stall from leaving the UI stuck on "loading" forever.
       await new Promise<void>((resolve, reject) => {
-        video.onloadeddata = () => resolve();
-        video.onerror      = (e: Event | string) => reject(e);
-        video.play().catch(reject);
+        if (video.readyState >= 2) { resolve(); return; }
+
+        const timeout = window.setTimeout(
+          () => reject(new Error("Timed out waiting for video data")),
+          10_000,
+        );
+        const done = () => { window.clearTimeout(timeout); resolve(); };
+
+        video.onloadeddata = done;
+        video.onerror      = (e: Event | string) => { window.clearTimeout(timeout); reject(e); };
+      });
+
+      // iOS rejects play() outside a user gesture on a non-muted element; the
+      // <video> is muted + playsInline, so this resolves. A rejection here is
+      // not fatal — detectForVideo reads frames regardless.
+      await video.play().catch((err) => {
+        console.warn("[PoseDetector] video.play() rejected:", err);
       });
 
       isRunningRef.current = true;
@@ -269,7 +389,7 @@ export function usePoseDetector(): PoseDetectorAPI {
       processFrame(landmarker);
     } catch (err) {
       console.error("[PoseDetector] start error:", err);
-      dispatch({ type: "SET_DETECTOR_STATUS", payload: "error" });
+      dispatch({ type: "SET_DETECTOR_ERROR", payload: mediaErrorKey(err) });
     }
   }, [ensureLandmarker, processFrame, dispatch]);
 
