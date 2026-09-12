@@ -12,12 +12,13 @@
  *      inside usePoseDetector directly
  */
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ExerciseProvider, useExerciseStore } from "./features/exercise/store/exerciseStore";
 import { usePoseDetector } from "./features/exercise/hooks/usePoseDetector";
 import { useTimer } from "./features/exercise/hooks/useTimer";
-import type { AngleRecord } from "./features/exercise/hooks/useTimer";
+import type { AngleRecord, SnapshotDueInfo } from "./features/exercise/hooks/useTimer";
+import { captureSnapshot, revokeSnapshots, type Snapshot } from "./features/exercise/core/snapshot";
 import { CameraCanvas } from "./features/exercise/components/CameraCanvas";
 import { TimerWidget } from "./features/exercise/components/TimerWidget";
 import { TargetAngleDisplay } from "./features/exercise/components/TargetAngleDisplay";
@@ -34,16 +35,48 @@ import "./index.css";
 // ── Inner app (inside the provider) ──────────────────────────────────────────
 
 function ExerciseApp() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { state, dispatch } = useExerciseStore();
   const { videoRef, start, listCameras } = usePoseDetector();
-  const { start: startTimer, stop: stopTimer, angleLog } = useTimer();
+  const overlayRef = useRef<HTMLCanvasElement>(null);
+
+  // Validation photos collected during the current session
+  const sessionSnapshotsRef = useRef<Snapshot[]>([]);
+  const [exportSnapshots, setExportSnapshots] = useState<Snapshot[]>([]);
+
+  const handleSnapshotDue = useCallback((info: SnapshotDueInfo) => {
+    // Wait for React to commit the tick and the overlay RAF to redraw,
+    // so the HUD in the photo shows the 1:30 moment rather than the prior second.
+    window.setTimeout(() => {
+      const video = videoRef.current;
+      if (!video) return;
+
+      const now      = new Date();
+      const caption  = t("snapshot.caption", {
+        phase:  info.phaseNumber,
+        cycle:  info.cycle,
+        total:  info.totalCycles,
+        target: info.targetAngle,
+        date:   now.toLocaleString(i18n.language),
+      });
+      const fileName = `isoTrainer_${now.toISOString().slice(0, 10)}_ciclo${info.cycle}_fase${info.phaseNumber}.jpg`;
+
+      void captureSnapshot(video, overlayRef.current, caption, fileName).then((snap) => {
+        if (snap) sessionSnapshotsRef.current.push(snap);
+      });
+    }, 150);
+  }, [videoRef, t, i18n.language]);
+
+  const { start: startTimer, stop: stopTimer, angleLog } = useTimer({ onSnapshotDue: handleSnapshotDue });
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   // BUG B FIX: snapshot the log into state when training completes,
   // so ExportModal always shows the correct session's data.
   const [exportLog, setExportLog] = useState<AngleRecord[]>([]);
+
+  // Release object URLs of exported photos when replaced or on unmount
+  useEffect(() => () => revokeSnapshots(exportSnapshots), [exportSnapshots]);
 
   // Load saved protocol on mount
   useEffect(() => {
@@ -58,6 +91,8 @@ function ExerciseApp() {
   useEffect(() => {
     if (state.completed) {
       setExportLog([...angleLog.current]);   // snapshot — not the live ref
+      setExportSnapshots(sessionSnapshotsRef.current);
+      sessionSnapshotsRef.current = [];
       setExportOpen(true);
     }
   }, [state.completed, angleLog]);
@@ -75,6 +110,9 @@ function ExerciseApp() {
   }, [start, state.config.cameraIndex]);
 
   const handleStart = useCallback(() => {
+    // Discard photos from a session that was stopped before completing
+    revokeSnapshots(sessionSnapshotsRef.current);
+    sessionSnapshotsRef.current = [];
     startTimer();
   }, [startTimer]);
 
@@ -120,6 +158,7 @@ function ExerciseApp() {
           <div className="camera-wrapper">
             <CameraCanvas
               videoRef={videoRef}
+              canvasRef={overlayRef}
               landmarks={state.pose.landmarks}
               status={state.pose.status}
               angle={state.pose.angle}
@@ -211,6 +250,7 @@ function ExerciseApp() {
         isOpen={exportOpen}
         onClose={() => setExportOpen(false)}
         log={exportLog}
+        snapshots={exportSnapshots}
       />
     </div>
   );

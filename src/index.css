@@ -812,6 +812,39 @@ select.modal-input   { cursor: pointer; }
 .export-description strong {
   color: var(--color-text);
 }
+.export-modal {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.export-modal .modal-actions {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.snapshot-grid {
+  list-style:            none;
+  margin:                0;
+  padding:               0;
+  display:               grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap:                   var(--sp-2);
+}
+.snapshot-thumb {
+  display:       block;
+  width:         100%;
+  padding:       0;
+  border:        1px solid var(--color-border-2);
+  border-radius: var(--r-sm);
+  background:    var(--color-bg);
+  overflow:      hidden;
+  cursor:        pointer;
+}
+.snapshot-thumb:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.snapshot-thumb img {
+  display:      block;
+  width:        100%;
+  aspect-ratio: 16 / 10;
+  object-fit:   cover;
+}
 
 /* ── Footer ────────────────────────────────────────────────────────────────── */
 .app-footer {

@@ -29,6 +29,19 @@ export interface AngleRecord {
   targetAngle: number;
 }
 
+/** Context of the exercise phase at the moment a snapshot becomes due. */
+export interface SnapshotDueInfo {
+  phaseNumber: number;   // 1-based position within the protocol
+  cycle:       number;   // 1-based
+  totalCycles: number;
+  targetAngle: number;
+}
+
+export interface UseTimerOptions {
+  /** Fired once per exercise phase, at SNAPSHOT_AT_SECONDS elapsed */
+  onSnapshotDue?: (info: SnapshotDueInfo) => void;
+}
+
 export interface UseTimerReturn {
   start:     () => void;
   stop:      () => void;
@@ -70,10 +83,28 @@ function formatTime(seconds: number): string {
 
 const COUNTDOWN_SECONDS = 10;
 
+/**
+ * Seconds into each exercise phase at which the validation snapshot is taken.
+ * Phases shorter than this are captured on their last second instead.
+ */
+const SNAPSHOT_AT_SECONDS = 90;
+
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
-export function useTimer(): UseTimerReturn {
+export function useTimer(options: UseTimerOptions = {}): UseTimerReturn {
   const { state, dispatch } = useExerciseStore();
+
+  const onSnapshotDueRef = useRef(options.onSnapshotDue);
+  useEffect(() => { onSnapshotDueRef.current = options.onSnapshotDue; }, [options.onSnapshotDue]);
+
+  // Per-phase elapsed counter — reset whenever the phase changes, including
+  // consecutive exercise phases within a protocol (phaseIndex changes).
+  const phaseElapsedRef  = useRef(0);
+  const snapshotTakenRef = useRef(false);
+  useEffect(() => {
+    phaseElapsedRef.current  = 0;
+    snapshotTakenRef.current = false;
+  }, [state.phase, state.phaseIndex, state.cycles]);
   const intervalRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const angleLog     = useRef<AngleRecord[]>([]);
   const sessionStart = useRef<number>(0);
@@ -93,6 +124,9 @@ export function useTimer(): UseTimerReturn {
   const activeProtocolRef  = useRef(state.activeProtocol);
   const restDurationRef    = useRef(state.config.restDuration);
   const exerciseDurationRef = useRef(state.config.exerciseDuration);
+  const phaseIndexRef      = useRef(state.phaseIndex);
+  const cyclesRef          = useRef(state.cycles);
+  const targetCyclesRef    = useRef(state.targetCycles);
 
   useEffect(() => { secondsRef.current          = state.seconds;              }, [state.seconds]);
   useEffect(() => { phaseRef.current            = state.phase;                }, [state.phase]);
@@ -101,6 +135,9 @@ export function useTimer(): UseTimerReturn {
   useEffect(() => { activeProtocolRef.current   = state.activeProtocol;       }, [state.activeProtocol]);
   useEffect(() => { restDurationRef.current     = state.config.restDuration;  }, [state.config.restDuration]);
   useEffect(() => { exerciseDurationRef.current = state.config.exerciseDuration; }, [state.config.exerciseDuration]);
+  useEffect(() => { phaseIndexRef.current       = state.phaseIndex;           }, [state.phaseIndex]);
+  useEffect(() => { cyclesRef.current           = state.cycles;               }, [state.cycles]);
+  useEffect(() => { targetCyclesRef.current     = state.targetCycles;         }, [state.targetCycles]);
 
   // ── Phase transition ──────────────────────────────────────────────────────
 
@@ -188,6 +225,22 @@ export function useTimer(): UseTimerReturn {
           angle:       angleRef.current,
           targetAngle: targetAngleRef.current,
         });
+
+        // Validation snapshot at 1:30 into the phase (or last second if shorter)
+        phaseElapsedRef.current += 1;
+        if (
+          !snapshotTakenRef.current &&
+          (phaseElapsedRef.current >= SNAPSHOT_AT_SECONDS || next <= 1)
+        ) {
+          snapshotTakenRef.current = true;
+          const totalFases = activeProtocolRef.current?.fases.length ?? 1;
+          onSnapshotDueRef.current?.({
+            phaseNumber: (phaseIndexRef.current % totalFases) + 1,
+            cycle:       cyclesRef.current + 1,
+            totalCycles: targetCyclesRef.current,
+            targetAngle: targetAngleRef.current,
+          });
+        }
       }
 
       // Triple beep warning at 30 seconds remaining

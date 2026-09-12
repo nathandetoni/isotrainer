@@ -110,7 +110,14 @@
     "exportQuestion": "Deseja exportar os dados em <strong>CSV</strong>?",
     "close": "Fechar",
     "export": "📥 Exportar CSV",
-    "alertEmpty": "Nenhum dado registrado."
+    "alertEmpty": "Nenhum dado registrado.",
+    "photosLabel": "Fotos de validação do ângulo",
+    "savePhoto_one": "📷 Salvar Foto",
+    "savePhoto_other": "📷 Salvar Fotos ({{count}})",
+    "savePhotoItem": "Salvar foto: {{caption}}"
+  },
+  "snapshot": {
+    "caption": "Fase {{phase}} · Ciclo {{cycle}}/{{total}} · Alvo {{target}}° · {{date}}"
   },
   "protocolDelete": {
     "confirm": "Excluir este treino?"
