@@ -46,7 +46,7 @@ function ExerciseApp() {
 
   const handleSnapshotDue = useCallback((info: SnapshotDueInfo) => {
     // Wait for React to commit the tick and the overlay RAF to redraw,
-    // so the HUD in the photo shows the 1:30 moment rather than the prior second.
+    // so the HUD in the photo shows the 0:30-remaining moment rather than the prior second.
     window.setTimeout(() => {
       const video = videoRef.current;
       if (!video) return;

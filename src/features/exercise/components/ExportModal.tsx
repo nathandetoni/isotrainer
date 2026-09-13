@@ -2,7 +2,7 @@
  * features/exercise/components/ExportModal.tsx
  * ──────────────────────────────────────────────
  * Shown when training completes. Offers to export the angle log as CSV
- * and to save the validation photos taken at 1:30 of each exercise phase.
+ * and to save the validation photos taken with 30 seconds left in each exercise phase.
  * The log contains one row per second of "exercise" phase.
  */
 

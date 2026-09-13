@@ -38,7 +38,7 @@ export interface SnapshotDueInfo {
 }
 
 export interface UseTimerOptions {
-  /** Fired once per exercise phase, at SNAPSHOT_AT_SECONDS elapsed */
+  /** Fired once per exercise phase, when SNAPSHOT_REMAINING_SECONDS remain */
   onSnapshotDue?: (info: SnapshotDueInfo) => void;
 }
 
@@ -84,10 +84,11 @@ function formatTime(seconds: number): string {
 const COUNTDOWN_SECONDS = 10;
 
 /**
- * Seconds into each exercise phase at which the validation snapshot is taken.
- * Phases shorter than this are captured on their last second instead.
+ * Remaining seconds of each exercise phase at which the validation snapshot is
+ * taken — same moment as the 30-second triple beep. Phases shorter than this
+ * are captured on their first tick instead.
  */
-const SNAPSHOT_AT_SECONDS = 90;
+const SNAPSHOT_REMAINING_SECONDS = 30;
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
@@ -97,12 +98,10 @@ export function useTimer(options: UseTimerOptions = {}): UseTimerReturn {
   const onSnapshotDueRef = useRef(options.onSnapshotDue);
   useEffect(() => { onSnapshotDueRef.current = options.onSnapshotDue; }, [options.onSnapshotDue]);
 
-  // Per-phase elapsed counter — reset whenever the phase changes, including
+  // One snapshot per phase — reset whenever the phase changes, including
   // consecutive exercise phases within a protocol (phaseIndex changes).
-  const phaseElapsedRef  = useRef(0);
   const snapshotTakenRef = useRef(false);
   useEffect(() => {
-    phaseElapsedRef.current  = 0;
     snapshotTakenRef.current = false;
   }, [state.phase, state.phaseIndex, state.cycles]);
   const intervalRef  = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -226,12 +225,8 @@ export function useTimer(options: UseTimerOptions = {}): UseTimerReturn {
           targetAngle: targetAngleRef.current,
         });
 
-        // Validation snapshot at 1:30 into the phase (or last second if shorter)
-        phaseElapsedRef.current += 1;
-        if (
-          !snapshotTakenRef.current &&
-          (phaseElapsedRef.current >= SNAPSHOT_AT_SECONDS || next <= 1)
-        ) {
+        // Validation snapshot in the last 30 seconds (or first tick if shorter)
+        if (!snapshotTakenRef.current && next <= SNAPSHOT_REMAINING_SECONDS) {
           snapshotTakenRef.current = true;
           const totalFases = activeProtocolRef.current?.fases.length ?? 1;
           onSnapshotDueRef.current?.({
