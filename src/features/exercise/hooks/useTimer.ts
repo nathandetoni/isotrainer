@@ -29,6 +29,19 @@ export interface AngleRecord {
   targetAngle: number;
 }
 
+/** Context of the exercise phase at the moment a snapshot becomes due. */
+export interface SnapshotDueInfo {
+  phaseNumber: number;   // 1-based position within the protocol
+  cycle:       number;   // 1-based
+  totalCycles: number;
+  targetAngle: number;
+}
+
+export interface UseTimerOptions {
+  /** Fired once per exercise phase, when SNAPSHOT_REMAINING_SECONDS remain */
+  onSnapshotDue?: (info: SnapshotDueInfo) => void;
+}
+
 export interface UseTimerReturn {
   start:     () => void;
   stop:      () => void;
@@ -70,10 +83,27 @@ function formatTime(seconds: number): string {
 
 const COUNTDOWN_SECONDS = 10;
 
+/**
+ * Remaining seconds of each exercise phase at which the validation snapshot is
+ * taken — same moment as the 30-second triple beep. Phases shorter than this
+ * are captured on their first tick instead.
+ */
+const SNAPSHOT_REMAINING_SECONDS = 30;
+
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
-export function useTimer(): UseTimerReturn {
+export function useTimer(options: UseTimerOptions = {}): UseTimerReturn {
   const { state, dispatch } = useExerciseStore();
+
+  const onSnapshotDueRef = useRef(options.onSnapshotDue);
+  useEffect(() => { onSnapshotDueRef.current = options.onSnapshotDue; }, [options.onSnapshotDue]);
+
+  // One snapshot per phase — reset whenever the phase changes, including
+  // consecutive exercise phases within a protocol (phaseIndex changes).
+  const snapshotTakenRef = useRef(false);
+  useEffect(() => {
+    snapshotTakenRef.current = false;
+  }, [state.phase, state.phaseIndex, state.cycles]);
   const intervalRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const angleLog     = useRef<AngleRecord[]>([]);
   const sessionStart = useRef<number>(0);
@@ -93,6 +123,9 @@ export function useTimer(): UseTimerReturn {
   const activeProtocolRef  = useRef(state.activeProtocol);
   const restDurationRef    = useRef(state.config.restDuration);
   const exerciseDurationRef = useRef(state.config.exerciseDuration);
+  const phaseIndexRef      = useRef(state.phaseIndex);
+  const cyclesRef          = useRef(state.cycles);
+  const targetCyclesRef    = useRef(state.targetCycles);
 
   useEffect(() => { secondsRef.current          = state.seconds;              }, [state.seconds]);
   useEffect(() => { phaseRef.current            = state.phase;                }, [state.phase]);
@@ -101,6 +134,9 @@ export function useTimer(): UseTimerReturn {
   useEffect(() => { activeProtocolRef.current   = state.activeProtocol;       }, [state.activeProtocol]);
   useEffect(() => { restDurationRef.current     = state.config.restDuration;  }, [state.config.restDuration]);
   useEffect(() => { exerciseDurationRef.current = state.config.exerciseDuration; }, [state.config.exerciseDuration]);
+  useEffect(() => { phaseIndexRef.current       = state.phaseIndex;           }, [state.phaseIndex]);
+  useEffect(() => { cyclesRef.current           = state.cycles;               }, [state.cycles]);
+  useEffect(() => { targetCyclesRef.current     = state.targetCycles;         }, [state.targetCycles]);
 
   // ── Phase transition ──────────────────────────────────────────────────────
 
@@ -188,6 +224,18 @@ export function useTimer(): UseTimerReturn {
           angle:       angleRef.current,
           targetAngle: targetAngleRef.current,
         });
+
+        // Validation snapshot in the last 30 seconds (or first tick if shorter)
+        if (!snapshotTakenRef.current && next <= SNAPSHOT_REMAINING_SECONDS) {
+          snapshotTakenRef.current = true;
+          const totalFases = activeProtocolRef.current?.fases.length ?? 1;
+          onSnapshotDueRef.current?.({
+            phaseNumber: (phaseIndexRef.current % totalFases) + 1,
+            cycle:       cyclesRef.current + 1,
+            totalCycles: targetCyclesRef.current,
+            targetAngle: targetAngleRef.current,
+          });
+        }
       }
 
       // Triple beep warning at 30 seconds remaining

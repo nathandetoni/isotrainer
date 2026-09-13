@@ -39,6 +39,8 @@ const PHASE_COLOR: Record<TimerPhase, string> = {
 
 interface CameraCanvasProps {
   videoRef: RefObject<HTMLVideoElement | null>;
+  /** Overlay canvas — owned by the parent so snapshots can composite it */
+  canvasRef: RefObject<HTMLCanvasElement | null>;
   landmarks: LandmarkSet | null;
   status: PoseStatus;
   angle: number | null;
@@ -52,6 +54,7 @@ interface CameraCanvasProps {
 
 export const CameraCanvas = memo(function CameraCanvas({
   videoRef,
+  canvasRef,
   landmarks,
   status,
   angle,
@@ -60,7 +63,6 @@ export const CameraCanvas = memo(function CameraCanvas({
   phase,
   seconds,
 }: CameraCanvasProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const landmarksRef = useRef<LandmarkSet | null>(landmarks);
   const statusRef = useRef<PoseStatus>(status);
   const angleRef = useRef<number | null>(angle);
@@ -118,7 +120,7 @@ export const CameraCanvas = memo(function CameraCanvas({
       drawTimerHUD(ctx, secondsRef.current, curPhase, W);
       drawAngleHUD(ctx, angleRef.current, statusRef.current, W);
     }
-  }, [videoRef]);
+  }, [videoRef, canvasRef]);
 
   useEffect(() => {
     rafRef.current = requestAnimationFrame(renderLoop);

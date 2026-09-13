@@ -1,24 +1,31 @@
 /**
  * features/exercise/components/ExportModal.tsx
  * ──────────────────────────────────────────────
- * Shown when training completes. Offers to export the angle log as CSV.
+ * Shown when training completes. Offers to export the angle log as CSV
+ * and to save the validation photos taken with 30 seconds left in each exercise phase.
  * The log contains one row per second of "exercise" phase.
  */
 
 import { memo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import type { AngleRecord } from "../hooks/useTimer";
+import { downloadSnapshot, type Snapshot } from "../core/snapshot";
 
 interface ExportModalProps {
-  isOpen:   boolean;
-  onClose:  () => void;
-  log:      AngleRecord[];
+  isOpen:    boolean;
+  onClose:   () => void;
+  log:       AngleRecord[];
+  snapshots: Snapshot[];
 }
+
+/** Delay between consecutive downloads — browsers drop rapid-fire a.click() calls */
+const DOWNLOAD_STAGGER_MS = 300;
 
 export const ExportModal = memo(function ExportModal({
   isOpen,
   onClose,
   log,
+  snapshots,
 }: ExportModalProps) {
   const { t } = useTranslation();
 
@@ -43,6 +50,12 @@ export const ExportModal = memo(function ExportModal({
     a.click();
     URL.revokeObjectURL(url);
   }, [log, t]);
+
+  const handleSavePhotos = useCallback(() => {
+    snapshots.forEach((snap, i) => {
+      window.setTimeout(() => downloadSnapshot(snap), i * DOWNLOAD_STAGGER_MS);
+    });
+  }, [snapshots]);
 
   if (!isOpen) return null;
 
@@ -70,6 +83,24 @@ export const ExportModal = memo(function ExportModal({
           dangerouslySetInnerHTML={{ __html: t("exportModal.exportQuestion") }}
         />
 
+        {snapshots.length > 0 && (
+          <ul className="snapshot-grid" aria-label={t("exportModal.photosLabel")}>
+            {snapshots.map((snap) => (
+              <li key={snap.id}>
+                <button
+                  type="button"
+                  className="snapshot-thumb"
+                  onClick={() => downloadSnapshot(snap)}
+                  title={snap.caption}
+                  aria-label={t("exportModal.savePhotoItem", { caption: snap.caption })}
+                >
+                  <img src={snap.url} alt={snap.caption} loading="lazy" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
         <div className="modal-actions">
           <button className="btn btn--ghost" onClick={onClose}>
             {t("exportModal.close")}
@@ -77,6 +108,11 @@ export const ExportModal = memo(function ExportModal({
           {log.length > 0 && (
             <button className="btn btn--primary" onClick={handleExport}>
               {t("exportModal.export")}
+            </button>
+          )}
+          {snapshots.length > 0 && (
+            <button className="btn btn--amber" onClick={handleSavePhotos}>
+              {t("exportModal.savePhoto", { count: snapshots.length })}
             </button>
           )}
         </div>
