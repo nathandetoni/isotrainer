@@ -126,7 +126,7 @@ export function createDefaultPhases(): TrainingPhase[] {
 export function createNewProtocol(
   nome: string = "",
   fases?: TrainingPhase[],
-  ciclos: number = 10,
+  ciclos: number = 1,
 ): TrainingProtocol {
   return {
     id:     Date.now().toString(),

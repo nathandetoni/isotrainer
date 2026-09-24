@@ -32,7 +32,7 @@ export const ProtocolEditor = memo(function ProtocolEditor({
 }: ProtocolEditorProps) {
   const { t } = useTranslation();
   const [nome, setNome] = useState("");
-  const [ciclos, setCiclos] = useState(10);
+  const [ciclos, setCiclos] = useState(1);
   const [fases, setFases] = useState<TrainingPhase[]>(createDefaultPhases());
 
   // Reset form when modal opens
@@ -44,7 +44,7 @@ export const ProtocolEditor = memo(function ProtocolEditor({
       setFases(editingProtocol.fases.map((f) => ({ ...f })));
     } else {
       setNome("");
-      setCiclos(10);
+      setCiclos(1);
       setFases(createDefaultPhases());
     }
   }, [isOpen, editingProtocol]);
