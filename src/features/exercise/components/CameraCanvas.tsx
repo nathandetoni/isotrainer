@@ -106,7 +106,7 @@ export const CameraCanvas = memo(function CameraCanvas({
 
     const lm = landmarksRef.current;
     if (lm) {
-      drawPoseOverlay(ctx, lm, statusRef.current, W, H);
+      drawPoseOverlay(ctx, lm, statusRef.current, toleranceRef.current, W, H);
     }
 
     // Countdown overlay — drawn on top of pose, centered on screen
@@ -163,6 +163,7 @@ function drawPoseOverlay(
   ctx: CanvasRenderingContext2D,
   lm: LandmarkSet,
   status: PoseStatus,
+  tolerance: number,
   W: number,
   H: number,
 ): void {
@@ -188,7 +189,7 @@ function drawPoseOverlay(
   drawAngleArc(ctx, hip, knee, ankle, color);
 
   // ── Vertical arrow at knee ───────────────────────────────────────────────
-  drawVerticalArrow(ctx, knee, ankle, W);
+  drawVerticalArrow(ctx, knee, ankle, tolerance, W);
 
   // ── Landmark circles ────────────────────────────────────────────────────
   for (const { p, r } of [{ p: hip, r: 10 }, { p: knee, r: 15 }, { p: ankle, r: 10 }]) {
@@ -244,12 +245,14 @@ function drawAngleArc(
 // ── Vertical arrow ────────────────────────────────────────────────────────────
 // Perpendicular-to-ground reference arrow drawn from knee downward.
 // RED when the shin (BC) is NOT perpendicular — signals correction needed.
-// Turns bright GREEN with glow when BC is properly vertical.
+// Turns bright GREEN with glow when BC is at 90° to the ground within the
+// user-configured tolerance (same ± rule as the target angle).
 
 function drawVerticalArrow(
   ctx: CanvasRenderingContext2D,
   knee: { x: number; y: number },
   ankle: { x: number; y: number },
+  tolerance: number,
   W: number,
 ): void {
   const BCx = ankle.x - knee.x;
@@ -257,13 +260,12 @@ function drawVerticalArrow(
   const magBC = Math.hypot(BCx, BCy);
   if (magBC === 0) return;
 
-  // Deviation from pure vertical (downward = negative Y in screen coords)
-  // Uses a dedicated 12° threshold — the config tolerance (typically 3°) is
-  // far too strict for this visual indicator and would never trigger green.
-  const VERTICAL_TOLERANCE_DEG = 12;
-  const cosDeviation = Math.max(-1, Math.min(1, (-BCy) / magBC));
+  // Shin angle relative to the ground (90° = perpendicular). Canvas Y grows
+  // downward, so an ankle below the knee yields a positive BCy.
+  const cosDeviation = Math.max(-1, Math.min(1, BCy / magBC));
   const deviationDeg = Math.round(Math.acos(cosDeviation) * 180 / Math.PI);
-  const isVertical = deviationDeg <= VERTICAL_TOLERANCE_DEG;
+  const shinToGroundDeg = 90 - deviationDeg;
+  const isVertical = Math.abs(shinToGroundDeg - 90) <= tolerance;
 
   const arrowHeight = magBC * 0.9;
   const xArrow = knee.x;
